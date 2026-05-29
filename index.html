@@ -8,6 +8,40 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
+    <!-- Overlay de connexion / inscription -->
+    <div id="authOverlay" class="auth-overlay hidden">
+        <div class="auth-card glass-panel">
+            <div class="auth-logo">
+                <span>🔧</span>
+                <h1>Amboul <span class="highlight">Mecanic</span></h1>
+            </div>
+            <p class="auth-subtitle" id="authSubtitle">Connectez-vous pour accéder à l'outil de diagnostic.</p>
+            <div id="authError" class="error-inline hidden"></div>
+            <form id="authForm">
+                <div class="form-group">
+                    <label for="authEmail">Email</label>
+                    <input type="email" id="authEmail" placeholder="mecanicien@garage.com" required>
+                </div>
+                <div class="form-group">
+                    <label for="authPassword">Mot de passe</label>
+                    <input type="password" id="authPassword" placeholder="Minimum 8 caractères" required>
+                </div>
+                <button type="submit" class="btn primary-btn" id="authSubmitBtn">
+                    <span class="btn-text" id="authBtnText">Se connecter</span>
+                    <div class="loader hidden"></div>
+                </button>
+            </form>
+            <div class="auth-footer">
+                <span id="authToggleText">Pas encore de compte ?</span>
+                <button type="button" class="auth-toggle-btn" id="authToggleBtn">Créer un compte</button>
+            </div>
+            <div class="auth-free-mode">
+                <span>ou</span>
+                <button type="button" class="auth-free-btn" id="authFreeBtn">Continuer sans compte (Pollinations gratuit)</button>
+            </div>
+        </div>
+    </div>
+
     <div class="app-container">
         <!-- Header -->
         <header class="glass-header">
@@ -146,10 +180,17 @@
                 <button id="closeModalBtn" class="close-btn">&times;</button>
             </div>
             <div class="modal-body">
-                <p>Choisissez votre fournisseur d'IA et entrez sa clé API.</p>
-
                 <div class="form-group">
-                    <label for="aiProvider">Fournisseur d'IA</label>
+                    <label>Utilisateur connecté</label>
+                    <div id="settingsUserEmail" class="settings-user-email">—</div>
+                </div>
+                <div class="form-group">
+                    <label for="backendUrlInput">URL du Backend</label>
+                    <input type="text" id="backendUrlInput" placeholder="https://votre-backend.up.railway.app">
+                    <p class="field-hint">Laissez vide pour Pollinations gratuit sans compte.</p>
+                </div>
+                <div class="form-group">
+                    <label for="aiProvider">Fournisseur IA préféré</label>
                     <select id="aiProvider">
                         <option value="pollinations">🆓 Mode Gratuit — Sans clé API</option>
                         <option value="gemini">Google Gemini</option>
@@ -158,45 +199,15 @@
                         <option value="grok">xAI Grok</option>
                     </select>
                 </div>
-
-                <div class="form-group key-group" id="group-pollinations">
-                    <div class="free-mode-info">
-                        <span class="free-mode-icon">✅</span>
-                        <div>
-                            <strong>Aucune clé requise</strong>
-                            <p>Utilise <a href="https://pollinations.ai" target="_blank" rel="noopener">Pollinations.ai</a> — service IA gratuit et open-source. Peut être plus lent aux heures de pointe.</p>
-                            <p class="privacy-warning">⚠️ Confidentialité : vos données (véhicule, symptômes) sont envoyées à Pollinations.ai. Utilisez un fournisseur avec clé API pour plus de confidentialité.</p>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="form-group key-group hidden" id="group-gemini">
-                    <label for="apiKey_gemini">Clé API Gemini</label>
-                    <input type="password" id="apiKey_gemini" placeholder="AIzaSy...">
-                </div>
-
-                <div class="form-group key-group hidden" id="group-claude">
-                    <label for="apiKey_claude">Clé API Claude</label>
-                    <input type="password" id="apiKey_claude" placeholder="sk-ant-...">
-                </div>
-
-                <div class="form-group key-group hidden" id="group-deepseek">
-                    <label for="apiKey_deepseek">Clé API DeepSeek</label>
-                    <input type="password" id="apiKey_deepseek" placeholder="sk-...">
-                </div>
-
-                <div class="form-group key-group hidden" id="group-grok">
-                    <label for="apiKey_grok">Clé API Grok</label>
-                    <input type="password" id="apiKey_grok" placeholder="xai-...">
-                </div>
-
                 <div class="form-group">
-                    <label for="customModel">Nom du Modèle (Optionnel)</label>
+                    <label for="customModel">Modèle personnalisé (Optionnel)</label>
                     <input type="text" id="customModel" placeholder="Laissez vide pour le défaut">
-                    <p class="field-hint">Si l'API affiche une erreur de modèle, entrez ici un modèle valide (ex: claude-sonnet-4-6, gemini-2.5-pro).</p>
+                    <p class="field-hint">Ex: claude-sonnet-4-6, gemini-2.5-pro, grok-3</p>
                 </div>
-
                 <button type="button" id="saveSettingsBtn" class="btn primary-btn">Sauvegarder</button>
+                <button type="button" id="logoutBtn" class="btn danger-btn logout-btn">
+                    Se déconnecter
+                </button>
             </div>
         </div>
     </div>
@@ -232,6 +243,8 @@
 
     <script src="https://cdn.jsdelivr.net/npm/dompurify@3/dist/purify.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked@14/marked.min.js"></script>
+    <script src="auth.js"></script>
+    <script src="api.js"></script>
     <script src="app.js"></script>
 </body>
 </html>

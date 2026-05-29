@@ -20,6 +20,57 @@ document.addEventListener('DOMContentLoaded', () => {
     const vehicleSideBadge = document.getElementById('vehicleSideBadge');
     const diagPanelContent = document.getElementById('diagPanelContent');
 
+    // ===== Initialisation Auth =====
+    if (!isLoggedIn() && getBackendUrl()) {
+        showAuthOverlay();
+    }
+
+    // ===== Logique overlay connexion =====
+    // showAuthOverlay / hideAuthOverlay sont définies dans auth.js (chargé avant)
+    const authForm    = document.getElementById('authForm');
+    const authError   = document.getElementById('authError');
+    const authBtnText = document.getElementById('authBtnText');
+    const authToggleBtn  = document.getElementById('authToggleBtn');
+    const authToggleText = document.getElementById('authToggleText');
+    const authSubmitBtn  = document.getElementById('authSubmitBtn');
+    const authFreeBtn    = document.getElementById('authFreeBtn');
+
+    let authMode = 'login';
+
+    authToggleBtn?.addEventListener('click', () => {
+        authMode = authMode === 'login' ? 'register' : 'login';
+        authBtnText.textContent   = authMode === 'login' ? 'Se connecter' : 'Créer un compte';
+        authToggleBtn.textContent = authMode === 'login' ? 'Créer un compte' : 'Se connecter';
+        authToggleText.textContent = authMode === 'login' ? 'Pas encore de compte ?' : 'Déjà un compte ?';
+        authError.classList.add('hidden');
+    });
+
+    authFreeBtn?.addEventListener('click', () => hideAuthOverlay());
+
+    authForm?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        authError.classList.add('hidden');
+        const email    = document.getElementById('authEmail').value.trim();
+        const password = document.getElementById('authPassword').value;
+        const loaderEl = authSubmitBtn.querySelector('.loader');
+        authBtnText.classList.add('hidden');
+        loaderEl.classList.remove('hidden');
+        authSubmitBtn.disabled = true;
+        try {
+            authMode === 'login' ? await login(email, password) : await register(email, password);
+            hideAuthOverlay();
+            const emailDisplay = document.getElementById('settingsUserEmail');
+            if (emailDisplay) emailDisplay.textContent = getUser() || '—';
+        } catch (err) {
+            authError.textContent = err.message;
+            authError.classList.remove('hidden');
+        } finally {
+            authBtnText.classList.remove('hidden');
+            loaderEl.classList.add('hidden');
+            authSubmitBtn.disabled = false;
+        }
+    });
+
     // ===== Constants =====
     const MAX_HISTORY = 10;
     const HISTORY_KEY = 'amboul_history';
@@ -51,28 +102,6 @@ document.addEventListener('DOMContentLoaded', () => {
         "Toyota": ["Yaris", "Corolla", "RAV4", "C-HR", "Aygo"],
         "Volkswagen": ["Golf", "Polo", "Tiguan", "Passat", "T-Roc"]
     };
-
-    // ===== System Prompt =====
-    const SYSTEM_PROMPT = `Tu incarnes le rôle suivant : Expert métier, Coach pédagogique, Analyste critique, Assistant créatif.
-Contexte d'utilisation : Pour aider les mecaniciens qui ne sont pas trop habile en code de vehicule a faire des reparations.
-Objectif : Reperer le probleme, decrire l'anomalie porter une analyse du probleme et donne un resultat avec diagnostic pour reparer le vehicule.
-Présente ta réponse au format : Tableau, Paragraphes, Plan numéroté, Liste à puces.
-Contraintes impératives : Aller directement dans le problème, donne un diagnostic precis sans trop de gros mots technique. Soyez bref.
-Coûts des pièces : Toujours inclure une estimation du coût des pièces en dollars canadiens ($ CAD). Indique une fourchette réaliste (ex: 45–90 $ CAD) basée sur les prix du marché canadien (auto parts stores, dealership).
-Schéma de localisation : Fournis un schéma ASCII simple montrant où se trouve la pièce défectueuse sur le véhicule. Utilise un format comme celui-ci (adapte selon la pièce) :
-  ┌─────────────────────────────────┐
-  │  AVANT          ← CAPOT →       │
-  │  [Moteur]  [Filtre] [Batterie]  │
-  │  ← CÔTÉ GAUCHE  CÔTÉ DROIT →   │
-  │  [Boîte]   [★PIÈCE★]  [Réserv] │
-  │  ARRIÈRE                        │
-  └─────────────────────────────────┘
-  Marque la pièce défectueuse avec ★ et mets-la en évidence.
-Outils de démontage/remontage : Fournis deux listes séparées :
-  - DÉMONTAGE : liste les outils et clés avec tailles précises (ex: douille 10mm, clé plate 17mm, tournevis Torx T25)
-  - REMONTAGE : liste les couples de serrage si applicable (ex: 25 Nm), les précautions et l'ordre de remontage.
-Public visé : Au mecanicien reparateur de vehicule.
-Adopte un ton Technique, Détaillé, Concis, Pédagogique.`;
 
     // ===== OBD2 Database =====
     const OBD2_DATABASE = {
@@ -187,12 +216,6 @@ Adopte un ton Technique, Détaillé, Concis, Pédagogique.`;
     }
 
     // ===== Form Error Helpers =====
-    function showFormError(message) {
-        formError.textContent = message;
-        formError.classList.remove('hidden');
-        formError.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-    }
-
     function clearFormError() {
         formError.classList.add('hidden');
         formError.textContent = '';
@@ -259,6 +282,10 @@ Adopte un ton Technique, Détaillé, Concis, Pédagogique.`;
         apiKeyInputs.grok.value = localStorage.getItem('api_key_grok') || '';
         customModelInput.value = localStorage.getItem('custom_model') || '';
         updateKeyGroupVisibility();
+        const backendUrlInput = document.getElementById('backendUrlInput');
+        if (backendUrlInput) backendUrlInput.value = getBackendUrl();
+        const emailDisplay = document.getElementById('settingsUserEmail');
+        if (emailDisplay) emailDisplay.textContent = getUser() || '—';
         settingsModal.classList.remove('hidden');
     };
 
@@ -269,15 +296,20 @@ Adopte un ton Technique, Détaillé, Concis, Pédagogique.`;
     settingsModal.addEventListener('click', (e) => { if (e.target === settingsModal) closeModal(); });
 
     saveSettingsBtn.addEventListener('click', () => {
+        const backendUrlInput = document.getElementById('backendUrlInput');
+        if (backendUrlInput) {
+            localStorage.setItem('amboul_backend_url', backendUrlInput.value.trim());
+        }
         localStorage.setItem('ai_provider', aiProviderSelect.value);
-        localStorage.setItem('api_key_gemini', apiKeyInputs.gemini.value.trim());
-        localStorage.setItem('api_key_claude', apiKeyInputs.claude.value.trim());
-        localStorage.setItem('api_key_deepseek', apiKeyInputs.deepseek.value.trim());
-        localStorage.setItem('api_key_grok', apiKeyInputs.grok.value.trim());
         localStorage.setItem('custom_model', customModelInput.value.trim());
         closeModal();
         saveSettingsBtn.textContent = '✅ Sauvegardé !';
         setTimeout(() => { saveSettingsBtn.textContent = 'Sauvegarder'; }, 2000);
+    });
+
+    document.getElementById('logoutBtn')?.addEventListener('click', () => {
+        closeModal();
+        logout();
     });
 
     // ===== Loading State =====
@@ -878,111 +910,19 @@ Adopte un ton Technique, Détaillé, Concis, Pédagogique.`;
         clearFormError();
 
         const provider = localStorage.getItem('ai_provider') || 'pollinations';
-        const apiKey = provider === 'pollinations' ? null : localStorage.getItem(`api_key_${provider}`);
-
-        if (provider !== 'pollinations' && !apiKey) {
-            showFormError(`Clé API ${provider} manquante. Configurez-la dans ⚙️ Paramètres, ou choisissez le Mode Gratuit.`);
-            openModal();
-            return;
-        }
 
         const make = document.getElementById('carMake').value.trim();
         const model = document.getElementById('carModel').value.trim();
         const year = document.getElementById('carYear').value;
         const symptom = document.getElementById('carSymptom').value.trim();
 
-        const userPrompt = `Véhicule: ${make} ${model} (Année: ${year})\nSymptômes/Codes: ${symptom}\nVeuillez analyser et fournir un diagnostic selon vos instructions systémiques.`;
-
         setLoading(true);
         resultContainer.innerHTML = '';
         resultContainer.classList.remove('empty');
         printBtn.classList.add('hidden');
 
-        const customModel = localStorage.getItem('custom_model');
-
         try {
-            let textResponse = '';
-
-            if (provider === 'pollinations') {
-                const model = customModel || 'openai-large';
-                const response = await fetch('https://text.pollinations.ai/', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        messages: [
-                            { role: 'system', content: SYSTEM_PROMPT },
-                            { role: 'user', content: userPrompt }
-                        ],
-                        model,
-                        private: true,
-                        seed: -1
-                    })
-                });
-                if (!response.ok) {
-                    const err = await response.text();
-                    throw new Error(`[Pollinations] ${err || response.statusText}`);
-                }
-                textResponse = await response.text();
-            } else if (provider === 'gemini') {
-                const modelName = customModel || 'gemini-2.5-flash';
-                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        system_instruction: { parts: { text: SYSTEM_PROMPT } },
-                        contents: [{ parts: [{ text: userPrompt }] }]
-                    })
-                });
-                if (!response.ok) { const err = await response.json(); throw new Error(`[Gemini] ` + (err.error?.message || JSON.stringify(err))); }
-                const data = await response.json();
-                if (!data.candidates?.[0]?.content?.parts?.[0]?.text) {
-                    throw new Error('[Gemini] Réponse vide ou bloquée par le filtre de sécurité. Reformulez votre demande.');
-                }
-                textResponse = data.candidates[0].content.parts[0].text;
-            } else if (provider === 'deepseek') {
-                const response = await fetch('https://api.deepseek.com/chat/completions', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
-                    body: JSON.stringify({
-                        model: customModel || 'deepseek-v3',
-                        messages: [{ role: 'system', content: SYSTEM_PROMPT }, { role: 'user', content: userPrompt }]
-                    })
-                });
-                if (!response.ok) { const err = await response.json(); throw new Error(`[DeepSeek] ` + (err.error?.message || err.message || JSON.stringify(err))); }
-                const data = await response.json();
-                textResponse = data.choices[0].message.content;
-            } else if (provider === 'grok') {
-                const response = await fetch('https://api.x.ai/v1/chat/completions', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
-                    body: JSON.stringify({
-                        model: customModel || 'grok-3-mini',
-                        messages: [{ role: 'system', content: SYSTEM_PROMPT }, { role: 'user', content: userPrompt }]
-                    })
-                });
-                if (!response.ok) { const err = await response.json(); throw new Error(`[Grok] ` + (err.error?.message || err.message || JSON.stringify(err))); }
-                const data = await response.json();
-                textResponse = data.choices[0].message.content;
-            } else if (provider === 'claude') {
-                const response = await fetch('https://api.anthropic.com/v1/messages', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'x-api-key': apiKey,
-                        'anthropic-version': '2023-06-01',
-                        'anthropic-dangerous-direct-browser-access': 'true'
-                    },
-                    body: JSON.stringify({
-                        model: customModel || 'claude-haiku-4-5-20251001',
-                        max_tokens: 1024,
-                        system: SYSTEM_PROMPT,
-                        messages: [{ role: 'user', content: userPrompt }]
-                    })
-                });
-                if (!response.ok) { const err = await response.json(); throw new Error(`[Claude] ` + (err.error?.message || err.message || JSON.stringify(err))); }
-                const data = await response.json();
-                textResponse = data.content[0].text;
-            }
+            const textResponse = await callDiagnose({ make, model, year, symptom, provider });
 
             const rawHtml = typeof window.marked !== 'undefined'
                 ? window.marked.parse(textResponse)
@@ -1002,20 +942,18 @@ Adopte un ton Technique, Détaillé, Concis, Pédagogique.`;
         } catch (error) {
             console.error('API Error:', error);
             let userMessage = error.message;
-            if (error.message.includes('401') || error.message.toLowerCase().includes('unauthorized')) {
-                userMessage = 'Clé API invalide ou expirée. Vérifiez vos paramètres (⚙️).';
+            if (error.message.includes('401') || error.message.toLowerCase().includes('session expirée')) {
+                userMessage = 'Session expirée. Reconnectez-vous.';
             } else if (error.message.includes('429') || error.message.toLowerCase().includes('quota')) {
                 userMessage = 'Quota API dépassé. Réessayez dans quelques minutes.';
-            } else if (error.message.toLowerCase().includes('model')) {
-                userMessage = 'Modèle IA invalide. Vérifiez le "Nom du Modèle" dans les paramètres (⚙️).';
             } else if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
                 userMessage = 'Erreur réseau. Vérifiez votre connexion internet.';
             }
             resultContainer.innerHTML = `
                 <div class="empty-state">
                     <span class="empty-icon" style="color: var(--error-color)">⚠️</span>
-                    <p style="color: var(--error-color); font-weight: 600;">${userMessage}</p>
-                    <p style="font-size: 0.8rem; margin-top: 0.5rem; color: var(--text-muted);">Détail technique : ${error.message}</p>
+                    <p style="color: var(--error-color); font-weight: 600;">${escHtml(userMessage)}</p>
+                    <p style="font-size: 0.8rem; margin-top: 0.5rem; color: var(--text-muted);">Détail : ${escHtml(error.message)}</p>
                 </div>
             `;
             printBtn.classList.add('hidden');

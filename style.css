@@ -1472,6 +1472,109 @@ select option {
     margin-left: auto;
 }
 
+/* ===== OVERLAY CONNEXION ===== */
+.auth-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 200;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg-color);
+    padding: 1rem;
+}
+
+.auth-card {
+    width: 100%;
+    max-width: 420px;
+    padding: 2.5rem 2rem;
+    animation: modalFadeIn 0.3s ease-out;
+}
+
+.auth-logo {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 0.5rem;
+}
+
+.auth-logo span { font-size: 1.75rem; }
+
+.auth-logo h1 {
+    font-family: var(--font-heading);
+    font-size: 1.5rem;
+    font-weight: 700;
+}
+
+.auth-subtitle {
+    color: var(--text-muted);
+    font-size: 0.875rem;
+    margin-bottom: 1.5rem;
+}
+
+.auth-footer {
+    margin-top: 1.25rem;
+    text-align: center;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+}
+
+.auth-toggle-btn {
+    background: none;
+    border: none;
+    color: var(--primary-color);
+    cursor: pointer;
+    font-size: 0.85rem;
+    font-family: var(--font-sans);
+    text-decoration: underline;
+    padding: 0;
+}
+
+.auth-free-mode {
+    margin-top: 1rem;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--text-muted);
+    font-size: 0.8rem;
+}
+
+.auth-free-btn {
+    background: none;
+    border: 1px solid var(--glass-border);
+    color: var(--text-muted);
+    border-radius: 8px;
+    padding: 0.5rem 1rem;
+    cursor: pointer;
+    font-size: 0.78rem;
+    font-family: var(--font-sans);
+    transition: var(--transition);
+}
+
+.auth-free-btn:hover {
+    border-color: var(--accent-color);
+    color: var(--accent-color);
+}
+
+.settings-user-email {
+    font-weight: 600;
+    color: var(--accent-color);
+    font-size: 0.9rem;
+    padding: 0.5rem 0;
+}
+
+/* Bouton déconnexion dans le modal paramètres */
+.logout-btn {
+    margin-top: 0.75rem;
+    width: 100%;
+}
+
 /* ===== IMPRESSION ===== */
 .print-zone {
     display: none;
