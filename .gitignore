@@ -1,0 +1,27 @@
+# Superpowers / brainstorm
+.superpowers/
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Éditeurs
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Environnement local
+.env
+.env.local
+
+# Node (si dépendances futures)
+node_modules/
+
+# Build
+dist/
+build/

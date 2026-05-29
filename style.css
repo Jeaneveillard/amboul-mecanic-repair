@@ -1,0 +1,1482 @@
+/* Variables & Theming */
+:root {
+    --bg-color: #0f1115;
+    --glass-bg: rgba(25, 28, 35, 0.6);
+    --glass-border: rgba(255, 255, 255, 0.08);
+    --primary-color: #3b82f6;
+    --primary-hover: #2563eb;
+    --accent-color: #10b981;
+    --text-main: #f3f4f6;
+    --text-muted: #9ca3af;
+    --error-color: #ef4444;
+    --warning-color: #f59e0b;
+    --font-sans: 'Inter', sans-serif;
+    --font-heading: 'Outfit', sans-serif;
+    --border-radius: 12px;
+    --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Reset & Base Styles */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    background-color: var(--bg-color);
+    color: var(--text-main);
+    font-family: var(--font-sans);
+    min-height: 100vh;
+    background-image: radial-gradient(circle at top right, rgba(59, 130, 246, 0.1), transparent 400px),
+                      radial-gradient(circle at bottom left, rgba(16, 185, 129, 0.05), transparent 400px);
+    background-attachment: fixed;
+    line-height: 1.5;
+}
+
+/* Layout */
+.app-container {
+    width: 100%;
+    height: 100vh;
+    padding: 1.5rem 2rem;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+/* Header */
+.glass-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 1.5rem;
+    background: var(--glass-bg);
+    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--border-radius);
+    margin-bottom: 2rem;
+}
+
+.logo {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.logo-icon {
+    font-size: 1.5rem;
+}
+
+.logo h1 {
+    font-family: var(--font-heading);
+    font-size: 1.5rem;
+    font-weight: 700;
+}
+
+.highlight {
+    color: var(--primary-color);
+}
+
+.icon-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    font-size: 1.25rem;
+    cursor: pointer;
+    transition: var(--transition);
+    padding: 0.5rem;
+    border-radius: 50%;
+}
+
+.icon-btn:hover {
+    color: var(--text-main);
+    background: rgba(255, 255, 255, 0.05);
+}
+
+/* Navigation header */
+.header-nav {
+    display: flex;
+    gap: 0.25rem;
+}
+
+.nav-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    font-size: 0.875rem;
+    font-family: var(--font-sans);
+    font-weight: 500;
+    cursor: pointer;
+    padding: 0.5rem 0.85rem;
+    border-radius: 8px;
+    border-bottom: 2px solid transparent;
+    transition: var(--transition);
+}
+
+.nav-btn:hover {
+    color: var(--text-main);
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.nav-btn.active {
+    color: var(--primary-color);
+    border-bottom-color: var(--primary-color);
+    background: rgba(59, 130, 246, 0.08);
+}
+
+/* ===========================
+   MOBILE BOTTOM NAV
+   =========================== */
+.mobile-nav {
+    display: none; /* visible seulement via media query */
+}
+
+/* ===========================
+   TABLETTE (769px – 1100px)
+   =========================== */
+@media (min-width: 769px) and (max-width: 1100px) {
+    .main-content {
+        grid-template-columns: 1fr 6px 1.5fr;
+    }
+    .photo-col { display: none; }
+    .diagram-panel { display: none; }
+    .col-resize-handle { display: flex; }
+    .col-resize-handle:first-of-type { display: none; }
+    .col-resize-handle:last-of-type { display: none; }
+
+    .input-panel, .result-panel {
+        min-height: 0;
+    }
+}
+
+/* ===========================
+   MOBILE (≤ 768px)
+   =========================== */
+@media (max-width: 768px) {
+    /* Container : défilement naturel */
+    .app-container {
+        height: auto;
+        min-height: 100dvh;
+        overflow: visible;
+        padding: 0;
+        padding-bottom: 72px; /* espace pour la bottom nav */
+    }
+
+    /* Header simplifié */
+    .glass-header {
+        border-radius: 0;
+        margin-bottom: 0;
+        padding: 0.75rem 1rem;
+        position: sticky;
+        top: 0;
+        z-index: 20;
+    }
+
+    .header-nav {
+        display: none; /* remplacé par la bottom nav */
+    }
+
+    /* Sections scrollables */
+    .app-section {
+        height: auto;
+        min-height: 0;
+        overflow: visible;
+    }
+
+    /* Grid mobile : une seule colonne */
+    .main-content {
+        grid-template-columns: 1fr;
+        row-gap: 0;
+        height: auto;
+        min-height: 0;
+        align-items: start;
+        padding: 1rem;
+        gap: 1rem;
+    }
+
+    .main-content > .glass-panel,
+    .main-content > .photo-col {
+        margin: 0;
+    }
+
+    .photo-col { display: none; }
+    .diagram-panel { display: none; }
+    .col-resize-handle { display: none; }
+
+    /* Panneau résultats : scroll interne */
+    .result-panel {
+        overflow: hidden;
+    }
+    .result-content {
+        max-height: 60vh;
+        min-height: 200px;
+        overflow-y: auto;
+    }
+
+    /* Touch targets minimum 48px */
+    .btn, select, input, textarea, .nav-btn, .check-btn {
+        min-height: 48px;
+    }
+    .check-btn {
+        min-width: 48px;
+        width: 34px;
+        height: 34px;
+    }
+    select, input, textarea {
+        font-size: 16px; /* évite le zoom auto iOS */
+    }
+    .obd2-card {
+        padding: 1rem;
+    }
+
+    /* Sections OBD2 et Historique */
+    .section-content {
+        margin: 0;
+        border-radius: 0;
+    }
+    #section-obd2 .section-content,
+    #section-historique .section-content {
+        padding: 1rem;
+        min-height: calc(100dvh - 130px);
+    }
+    .obd2-results {
+        grid-template-columns: 1fr;
+        max-height: none;
+    }
+    .historique-list {
+        max-height: none;
+    }
+
+    /* Bottom navigation */
+    .mobile-nav {
+        display: flex;
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        z-index: 40;
+        background: var(--glass-bg);
+        -webkit-backdrop-filter: blur(16px);
+        backdrop-filter: blur(16px);
+        border-top: 1px solid var(--glass-border);
+        padding: 0.35rem 0 calc(0.35rem + env(safe-area-inset-bottom, 0px));
+        gap: 0;
+    }
+
+    .mobile-nav-btn {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 0.2rem;
+        padding: 0.4rem 0.25rem;
+        background: none;
+        border: none;
+        color: var(--text-muted);
+        font-size: 0.62rem;
+        font-family: var(--font-sans);
+        font-weight: 500;
+        cursor: pointer;
+        min-height: 52px;
+        transition: color 0.2s;
+        -webkit-tap-highlight-color: transparent;
+    }
+
+    .mobile-nav-btn.active {
+        color: var(--primary-color);
+    }
+
+    .mobile-nav-icon {
+        font-size: 1.3rem;
+        line-height: 1;
+    }
+
+    /* Modal plein écran sur mobile */
+    .modal-content {
+        max-width: 100%;
+        border-radius: 16px 16px 0 0;
+        margin-top: auto;
+    }
+    .modal {
+        align-items: flex-end;
+    }
+
+    /* Zoom modal plein écran */
+    .svg-zoom-content {
+        width: 95vw;
+        padding: 1.25rem;
+    }
+}
+
+/* Main Content Grid — 4 colonnes + 3 handles */
+.main-content {
+    display: grid;
+    grid-template-columns: 200px 6px 1fr 6px 1.3fr 6px 1.1fr;
+    gap: 0;
+    column-gap: 0;
+    flex: 1;
+    min-height: 0;
+    height: 100%;
+    align-items: stretch;
+}
+
+/* Espacements visuels via padding sur les panneaux */
+.main-content > .glass-panel,
+.main-content > .photo-col {
+    margin: 0 0.75rem;
+}
+
+.main-content > .glass-panel:first-of-type,
+.main-content > .photo-col {
+    margin-left: 0;
+}
+
+.main-content > .glass-panel:last-of-type {
+    margin-right: 0;
+}
+
+/* Handle de redimensionnement entre colonnes */
+.col-resize-handle {
+    width: 6px;
+    align-self: stretch;
+    cursor: col-resize;
+    position: relative;
+    z-index: 10;
+    background: transparent;
+    transition: background 0.2s;
+    border-radius: 3px;
+}
+
+.col-resize-handle::after {
+    content: '';
+    position: absolute;
+    top: 20%;
+    bottom: 20%;
+    left: 2px;
+    width: 2px;
+    background: var(--glass-border);
+    border-radius: 2px;
+    transition: background 0.2s, width 0.15s, left 0.15s;
+}
+
+.col-resize-handle:hover::after,
+.col-resize-handle.dragging::after {
+    background: var(--primary-color);
+    width: 3px;
+    left: 1.5px;
+}
+
+@media (max-width: 1100px) {
+    .main-content {
+        grid-template-columns: 180px 6px 1fr 6px 1.3fr;
+    }
+    .diagram-panel { display: none; }
+    .col-resize-handle:last-of-type { display: none; }
+}
+
+@media (max-width: 850px) {
+    .app-container {
+        height: auto;
+        overflow: visible;
+        padding: 0 0 72px 0;
+    }
+    .app-section {
+        height: auto;
+        overflow: visible;
+    }
+    .main-content {
+        grid-template-columns: 1fr;
+        height: auto;
+        min-height: 0;
+        row-gap: 1rem;
+        padding: 1rem;
+    }
+    .photo-col { display: none; }
+    .col-resize-handle { display: none; }
+    .main-content > .glass-panel { margin: 0; }
+    .result-content {
+        max-height: 60vh;
+        overflow-y: auto;
+    }
+}
+
+/* Modal zoom SVG schéma */
+.svg-zoom-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.svg-zoom-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.82);
+    -webkit-backdrop-filter: blur(6px);
+    backdrop-filter: blur(6px);
+    cursor: pointer;
+}
+
+.svg-zoom-content {
+    position: relative;
+    z-index: 1;
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: 16px;
+    padding: 2rem;
+    width: min(90vw, 820px);
+    animation: modalFadeIn 0.2s ease-out;
+}
+
+.svg-zoom-content .diag-zone-svg {
+    width: 100%;
+    height: auto;
+}
+
+.svg-zoom-close {
+    position: absolute;
+    top: 0.75rem;
+    right: 0.75rem;
+    background: rgba(255,255,255,0.08);
+    border: none;
+    color: var(--text-muted);
+    font-size: 1.4rem;
+    line-height: 1;
+    cursor: pointer;
+    border-radius: 50%;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: var(--transition);
+}
+
+.svg-zoom-close:hover {
+    background: rgba(255,255,255,0.15);
+    color: var(--text-main);
+}
+
+/* ===== Vérification des symptômes ===== */
+.check-th {
+    width: 42px;
+    text-align: center;
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    letter-spacing: 0.04em;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.check-td {
+    text-align: center;
+    padding: 0.3rem 0.4rem !important;
+    vertical-align: middle;
+    border-right: 1px solid var(--glass-border);
+}
+
+.check-btn {
+    background: none;
+    border: 1.5px solid rgba(255,255,255,0.15);
+    border-radius: 50%;
+    width: 26px;
+    height: 26px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    padding: 0;
+}
+
+.check-btn:hover {
+    border-color: var(--accent-color);
+    background: rgba(16,185,129,0.08);
+    transform: scale(1.1);
+}
+
+.check-icon {
+    font-size: 0.85rem;
+    font-weight: 700;
+    line-height: 1;
+}
+
+.check-icon.unchecked {
+    color: rgba(255,255,255,0.25);
+}
+
+.check-icon.checked {
+    color: var(--accent-color);
+}
+
+/* Ligne marquée comme normale */
+.symptom-normal {
+    background: rgba(16, 185, 129, 0.06) !important;
+    transition: background 0.3s ease;
+}
+
+.symptom-normal .check-btn {
+    border-color: var(--accent-color);
+    background: rgba(16,185,129,0.15);
+}
+
+.symptom-normal td:not(.check-td) {
+    opacity: 0.55;
+    text-decoration: line-through;
+    text-decoration-color: rgba(16,185,129,0.5);
+}
+
+/* ===== 4e panneau : cartes des pièces ===== */
+.parts-panel {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    cursor: pointer;
+}
+
+.parts-panel-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 160px;
+    color: var(--text-muted);
+    text-align: center;
+    gap: 0.5rem;
+}
+
+.parts-panel-title {
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-muted);
+    margin-bottom: 0.75rem;
+}
+
+.parts-cards {
+    display: flex;
+    flex-direction: column;
+    gap: 0.55rem;
+    overflow-y: auto;
+    max-height: calc(100vh - 200px);
+    padding-right: 0.2rem;
+}
+
+.part-card {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    background: rgba(0,0,0,0.2);
+    border: 1px solid var(--glass-border);
+    border-radius: 10px;
+    overflow: hidden;
+    transition: border-color 0.2s;
+    cursor: pointer;
+}
+
+.part-card:hover {
+    border-color: var(--primary-color);
+}
+
+.part-card-num {
+    width: 22px;
+    min-width: 22px;
+    align-self: stretch;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: white;
+    font-family: monospace;
+}
+
+.part-card-img {
+    width: 68px;
+    min-width: 68px;
+    height: 56px;
+    background: rgba(0,0,0,0.25);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    flex-shrink: 0;
+}
+
+.part-card-photo {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.part-icon-fb {
+    font-size: 1.6rem;
+    opacity: 0.5;
+}
+
+.part-card-info {
+    flex: 1;
+    padding: 0.4rem 0.4rem 0.4rem 0;
+    min-width: 0;
+}
+
+.part-card-name {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--text-main);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-bottom: 0.2rem;
+}
+
+.part-card-zone {
+    font-size: 0.68rem;
+    font-weight: 500;
+    opacity: 0.9;
+    margin-bottom: 0.2rem;
+}
+
+.part-card-search {
+    display: inline-block;
+    font-size: 0.65rem;
+    color: var(--primary-color);
+    text-decoration: none;
+    opacity: 0.75;
+    transition: opacity 0.2s;
+}
+
+.part-card-search:hover {
+    opacity: 1;
+    text-decoration: underline;
+}
+
+/* Image cliquable pour agrandissement */
+.part-card-photo {
+    cursor: zoom-in;
+    transition: opacity 0.2s;
+}
+
+.part-card-photo:hover {
+    opacity: 0.85;
+}
+
+/* Modal zoom photo de pièce */
+.part-zoom-body {
+    text-align: center;
+}
+
+.part-zoom-label {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--text-main);
+    margin-bottom: 1rem;
+}
+
+.part-zoom-img {
+    max-width: 100%;
+    max-height: 70vh;
+    object-fit: contain;
+    border-radius: 8px;
+    display: block;
+    margin: 0 auto;
+}
+
+/* Légende des pièces en cause */
+.parts-legend {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+    margin-top: 0.65rem;
+    max-height: 45vh;
+    overflow-y: auto;
+    padding-right: 0.2rem;
+}
+
+.parts-legend-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.77rem;
+    padding: 0.25rem 0.4rem;
+    border-radius: 6px;
+    background: rgba(0,0,0,0.15);
+    border: 1px solid var(--glass-border);
+}
+
+.parts-legend-num {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.65rem;
+    font-weight: 700;
+    color: white;
+    flex-shrink: 0;
+}
+
+.parts-legend-name {
+    flex: 1;
+    color: var(--text-main);
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.parts-legend-zone {
+    font-size: 0.62rem;
+    color: var(--text-muted);
+    background: rgba(255,255,255,0.06);
+    padding: 1px 6px;
+    border-radius: 10px;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+/* SVG cliquable dans le panneau */
+.diag-zone-wrap {
+    cursor: zoom-in;
+}
+
+.diag-zone-wrap:hover .diag-zone-svg {
+    opacity: 0.85;
+}
+
+/* Colonne photo (1re colonne, toujours visible) */
+.photo-col {
+    padding: 0;
+    overflow: hidden;
+    min-height: 260px;
+    display: flex;
+    flex-direction: column;
+}
+
+.vehicle-col-placeholder {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    color: var(--text-muted);
+    font-size: 0.8rem;
+    text-align: center;
+    padding: 1rem;
+}
+
+.vehicle-col-placeholder span {
+    font-size: 2.5rem;
+    opacity: 0.4;
+}
+
+.vehicle-col-photo {
+    width: 100%;
+    flex: 1;
+    object-fit: cover;
+    object-position: center;
+    display: block;
+}
+
+.vehicle-col-badge {
+    padding: 0.6rem 0.75rem;
+    background: linear-gradient(to top, rgba(0,0,0,0.92), transparent);
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: white;
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+}
+
+.vehicle-col-badge .year-tag {
+    display: inline-block;
+    background: rgba(59,130,246,0.7);
+    padding: 1px 7px;
+    border-radius: 20px;
+    font-size: 0.7rem;
+    width: fit-content;
+    margin-top: 0.1rem;
+}
+
+/* Colonne 1 figée */
+.photo-col {
+    overflow: hidden;
+}
+
+/* Colonne 2 figée */
+.input-panel {
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+/* Colonne 4 figée */
+.diagram-panel {
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+.diag-empty {
+    min-height: 160px;
+}
+
+.diag-empty-icon {
+    font-size: 2rem;
+}
+
+/* Sections */
+.app-section {
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+}
+
+.app-section.hidden {
+    display: none;
+}
+
+.section-content {
+    max-width: 900px;
+    margin: 0 auto;
+}
+
+/* Result panel header */
+.result-panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+/* Bouton secondaire */
+.secondary-btn {
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--text-muted);
+    border: 1px solid var(--glass-border);
+    width: auto;
+    padding: 0.4rem 0.85rem;
+    font-size: 0.8rem;
+}
+
+.secondary-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--text-main);
+}
+
+/* Bouton danger */
+.danger-btn {
+    background: rgba(239, 68, 68, 0.1);
+    color: var(--error-color);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    width: auto;
+    padding: 0.4rem 0.85rem;
+    font-size: 0.8rem;
+}
+
+.danger-btn:hover {
+    background: rgba(239, 68, 68, 0.2);
+}
+
+/* Message d'erreur inline */
+.error-inline {
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
+    color: var(--error-color);
+    font-size: 0.875rem;
+    margin-bottom: 1rem;
+}
+
+/* Panels */
+.glass-panel {
+    background: var(--glass-bg);
+    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--border-radius);
+    padding: 2rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+h2 {
+    font-family: var(--font-heading);
+    font-size: 1.25rem;
+    margin-bottom: 0.5rem;
+}
+
+.subtitle {
+    color: var(--text-muted);
+    font-size: 0.875rem;
+    margin-bottom: 2rem;
+}
+
+/* Forms */
+.form-group {
+    margin-bottom: 1.5rem;
+}
+
+.form-group.row {
+    display: flex;
+    gap: 1rem;
+}
+
+.form-group.row .col {
+    flex: 1;
+}
+
+label {
+    display: block;
+    font-size: 0.875rem;
+    font-weight: 500;
+    margin-bottom: 0.5rem;
+    color: var(--text-muted);
+}
+
+input, select, textarea {
+    width: 100%;
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid var(--glass-border);
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
+    color: var(--text-main);
+    font-family: var(--font-sans);
+    font-size: 0.95rem;
+    transition: var(--transition);
+}
+
+input:focus, select:focus, textarea:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+}
+
+select option {
+    background-color: var(--bg-color);
+    color: var(--text-main);
+}
+
+/* Buttons */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    font-weight: 600;
+    font-family: var(--font-sans);
+    cursor: pointer;
+    transition: var(--transition);
+    border: none;
+    position: relative;
+    overflow: hidden;
+}
+
+.primary-btn {
+    background-color: var(--primary-color);
+    color: white;
+}
+
+.primary-btn:hover {
+    background-color: var(--primary-hover);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+.primary-btn:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* Loader */
+.loader {
+    width: 20px;
+    height: 20px;
+    border: 2px solid rgba(255,255,255,0.3);
+    border-radius: 50%;
+    border-top-color: white;
+    animation: spin 0.8s linear infinite;
+    position: absolute;
+}
+
+.hidden {
+    display: none !important;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* Results Panel */
+.result-panel {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    overflow: hidden;
+}
+
+.result-content {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding-right: 0.5rem;
+    margin-top: 1rem;
+}
+
+/* Custom Scrollbar */
+.result-content::-webkit-scrollbar {
+    width: 6px;
+}
+.result-content::-webkit-scrollbar-track {
+    background: rgba(0,0,0,0.1);
+    border-radius: 4px;
+}
+.result-content::-webkit-scrollbar-thumb {
+    background: var(--glass-border);
+    border-radius: 4px;
+}
+.result-content::-webkit-scrollbar-thumb:hover {
+    background: var(--text-muted);
+}
+
+.empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    color: var(--text-muted);
+    text-align: center;
+    min-height: 200px;
+}
+
+.empty-icon {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    opacity: 0.5;
+}
+
+/* Markdown Styles in Result */
+.result-content h3 {
+    color: var(--primary-color);
+    margin-top: 1.5rem;
+    margin-bottom: 0.75rem;
+    font-size: 1.1rem;
+}
+
+.result-content p {
+    margin-bottom: 1rem;
+    color: #d1d5db;
+}
+
+.result-content ul, .result-content ol {
+    margin-bottom: 1rem;
+    padding-left: 1.5rem;
+    color: #d1d5db;
+}
+
+.result-content li {
+    margin-bottom: 0.5rem;
+}
+
+.result-content strong {
+    color: var(--text-main);
+}
+
+.result-content table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 1.5rem;
+    background: rgba(0,0,0,0.2);
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.result-content th, .result-content td {
+    padding: 0.75rem 1rem;
+    border: 1px solid var(--glass-border);
+    text-align: left;
+}
+
+.result-content th {
+    background: rgba(255,255,255,0.05);
+    font-weight: 600;
+}
+
+/* Modal */
+.modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.7);
+    -webkit-backdrop-filter: blur(4px);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 50;
+    padding: 1rem;
+}
+
+.modal-content {
+    width: 100%;
+    max-width: 450px;
+    animation: modalFadeIn 0.3s ease-out;
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+}
+
+.close-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    font-size: 1.5rem;
+    cursor: pointer;
+    line-height: 1;
+}
+
+.close-btn:hover {
+    color: var(--text-main);
+}
+
+.modal-body p {
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    margin-bottom: 1.5rem;
+}
+
+@keyframes modalFadeIn {
+    from { opacity: 0; transform: translateY(-20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* OBD2 */
+.obd2-search-bar {
+    margin-bottom: 1.5rem;
+}
+
+.obd2-results {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 0.75rem;
+    max-height: 60vh;
+    overflow-y: auto;
+    padding-right: 0.25rem;
+}
+
+.obd2-card {
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid var(--glass-border);
+    border-radius: 10px;
+    padding: 0.875rem;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.obd2-card:hover {
+    border-color: var(--primary-color);
+    background: rgba(59, 130, 246, 0.05);
+    transform: translateY(-1px);
+}
+
+.obd2-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.4rem;
+}
+
+.obd2-code {
+    font-weight: 700;
+    font-size: 1rem;
+    color: var(--primary-color);
+    font-family: 'Courier New', monospace;
+}
+
+.obd2-badge {
+    font-size: 0.7rem;
+    padding: 2px 8px;
+    border-radius: 20px;
+    font-weight: 600;
+}
+
+.badge-1 { background: rgba(16, 185, 129, 0.2); color: #10b981; }
+.badge-2 { background: rgba(245, 158, 11, 0.2); color: #f59e0b; }
+.badge-3 { background: rgba(239, 68, 68, 0.2); color: #ef4444; }
+
+.obd2-desc {
+    font-size: 0.85rem;
+    color: var(--text-main);
+    margin-bottom: 0.4rem;
+}
+
+.obd2-categorie {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+.obd2-empty {
+    color: var(--text-muted);
+    text-align: center;
+    padding: 3rem;
+    grid-column: 1 / -1;
+}
+
+/* Historique */
+.historique-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+.historique-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    max-height: 65vh;
+    overflow-y: auto;
+    padding-right: 0.25rem;
+}
+
+.historique-card {
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid var(--glass-border);
+    border-radius: 10px;
+    padding: 1rem;
+}
+
+.historique-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 0.5rem;
+}
+
+.historique-vehicule {
+    font-weight: 600;
+    color: var(--text-main);
+    font-size: 0.95rem;
+}
+
+.historique-meta {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+.historique-provider {
+    background: rgba(59, 130, 246, 0.15);
+    color: var(--primary-color);
+    padding: 1px 7px;
+    border-radius: 20px;
+    font-size: 0.7rem;
+}
+
+.historique-symptom {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-bottom: 0.75rem;
+}
+
+.historique-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.historique-empty {
+    color: var(--text-muted);
+    text-align: center;
+    padding: 3rem;
+}
+
+
+/* SVG Zone Diagnostique */
+.diag-zone-wrap {
+    margin-bottom: 1.25rem;
+    background: rgba(0,0,0,0.2);
+    border: 1px solid var(--glass-border);
+    border-radius: 10px;
+    padding: 0.75rem;
+}
+
+.diag-zone-title {
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-muted);
+    margin-bottom: 0.5rem;
+}
+
+.diag-zone-svg {
+    width: 100%;
+    height: auto;
+    border-radius: 6px;
+}
+
+.diag-zone-label {
+    margin-top: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+}
+
+.diag-zone-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    animation: pulse-dot 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse-dot {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50%       { opacity: 0.5; transform: scale(1.3); }
+}
+
+/* Vehicle Header (photo + badge) */
+.vehicle-header {
+    position: relative;
+    border-radius: 10px;
+    overflow: hidden;
+    margin-bottom: 1.25rem;
+    background: rgba(0, 0, 0, 0.25);
+    border: 1px solid var(--glass-border);
+}
+
+.vehicle-photo {
+    width: 100%;
+    max-height: 200px;
+    object-fit: cover;
+    display: block;
+    filter: brightness(0.75);
+}
+
+.vehicle-photo-fallback {
+    width: 100%;
+    height: 120px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    color: var(--text-muted);
+    font-size: 0.9rem;
+}
+
+.vehicle-badge {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+    padding: 0.6rem 1rem;
+    background: linear-gradient(to top, rgba(0,0,0,0.85), transparent);
+}
+
+.vehicle-make {
+    font-weight: 700;
+    font-size: 1rem;
+    color: white;
+}
+
+.vehicle-model {
+    font-size: 0.9rem;
+    color: rgba(255,255,255,0.8);
+}
+
+.vehicle-year {
+    font-size: 0.8rem;
+    background: rgba(59, 130, 246, 0.6);
+    color: white;
+    padding: 1px 8px;
+    border-radius: 20px;
+    margin-left: auto;
+}
+
+/* ===== IMPRESSION ===== */
+.print-zone {
+    display: none;
+}
+
+@media print {
+    body * {
+        visibility: hidden;
+    }
+
+    .print-zone,
+    .print-zone * {
+        visibility: visible;
+    }
+
+    .print-zone {
+        display: block;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        background: white;
+        color: black;
+        padding: 2rem;
+        font-family: 'Inter', sans-serif;
+        font-size: 12pt;
+    }
+
+    .print-zone h1 {
+        font-size: 18pt;
+        color: #1e40af;
+        margin-bottom: 0.25rem;
+    }
+
+    .print-zone h2 {
+        font-size: 14pt;
+        margin-top: 1rem;
+        margin-bottom: 0.25rem;
+        color: #1e3a5f;
+    }
+
+    .print-zone table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 0.75rem 0;
+    }
+
+    .print-zone th, .print-zone td {
+        border: 1px solid #ccc;
+        padding: 6px 10px;
+        font-size: 10pt;
+    }
+
+    .print-zone th {
+        background: #e8f0fe;
+    }
+}

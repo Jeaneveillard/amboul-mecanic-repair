@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Amboul Mecanic Repair - Diagnostic</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="glass-header">
+            <div class="logo">
+                <span class="logo-icon">🔧</span>
+                <h1>Amboul <span class="highlight">Mecanic</span></h1>
+            </div>
+            <nav class="header-nav">
+                <button type="button" class="nav-btn active" data-section="diagnostic">🔧 Diagnostic</button>
+                <button type="button" class="nav-btn" data-section="obd2">🔍 Base OBD2</button>
+                <button type="button" class="nav-btn" data-section="historique">📋 Historique</button>
+            </nav>
+            <button type="button" id="settingsBtn" class="icon-btn" title="Paramètres IA">⚙️</button>
+        </header>
+
+        <!-- Section: Diagnostic -->
+        <section id="section-diagnostic" class="app-section">
+            <main class="main-content" id="mainContent">
+
+                <!-- Colonne 1 : Photo du véhicule (toujours visible) -->
+                <aside id="vehiclePhotoPanel" class="photo-col glass-panel">
+                    <div id="vehicleSideFallback" class="vehicle-col-placeholder">
+                        <span>🚗</span>
+                        <p>Sélectionnez un véhicule</p>
+                    </div>
+                    <img id="vehicleSidePhoto" class="vehicle-col-photo hidden" src="" alt="">
+                    <div id="vehicleSideBadge" class="vehicle-col-badge"></div>
+                </aside>
+
+                <div class="col-resize-handle" title="Glisser pour redimensionner"></div>
+
+                <!-- Colonne 2 : Formulaire -->
+                <section class="panel input-panel glass-panel">
+                    <h2>Nouveau Diagnostic</h2>
+                    <p class="subtitle">Entrez les informations du véhicule de 2006 à nos jours.</p>
+                    <div id="formError" class="error-inline hidden"></div>
+                    <form id="diagnosticForm">
+                        <div class="form-group row">
+                            <div class="col">
+                                <label for="carMake">Marque du véhicule</label>
+                                <select id="carMake" required>
+                                    <option value="">Sélectionnez une marque</option>
+                                </select>
+                            </div>
+                            <div class="col">
+                                <label for="carModel">Modèle</label>
+                                <select id="carModel" required disabled>
+                                    <option value="">Sélectionnez un modèle</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="carYear">Année</label>
+                            <select id="carYear" required>
+                                <option value="">Sélectionnez l'année</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="carSymptom">Symptômes ou Codes OBD2</label>
+                            <textarea id="carSymptom" rows="4" placeholder="Ex: Code P0171, ou le moteur broute à l'accélération..." required></textarea>
+                        </div>
+
+                        <button type="submit" class="btn primary-btn" id="submitBtn">
+                            <span class="btn-text">Lancer l'Analyse</span>
+                            <div class="loader hidden"></div>
+                        </button>
+                    </form>
+                </section>
+
+                <div class="col-resize-handle" title="Glisser pour redimensionner"></div>
+
+                <!-- Right Panel: Output -->
+                <section class="panel result-panel glass-panel">
+                    <div class="result-panel-header">
+                        <h2>Résultat du Diagnostic</h2>
+                        <button type="button" id="printBtn" class="btn secondary-btn hidden">🖨️ Imprimer</button>
+                    </div>
+                    <div id="resultContainer" class="result-content empty">
+                        <div class="empty-state">
+                            <span class="empty-icon">🚙</span>
+                            <p>En attente des données du véhicule...</p>
+                        </div>
+                    </div>
+                </section>
+
+                <div class="col-resize-handle" title="Glisser pour redimensionner"></div>
+
+                <!-- 4th Panel: Schéma diagnostique (fixé) -->
+                <section class="panel diagram-panel glass-panel" id="diagPanel">
+                    <h2>Schéma de panne</h2>
+                    <div id="diagPanelContent">
+                        <div class="empty-state diag-empty">
+                            <span class="empty-icon diag-empty-icon">🔍</span>
+                            <p>Lancez un diagnostic pour localiser la panne sur le véhicule</p>
+                        </div>
+                    </div>
+                </section>
+            </main>
+        </section>
+
+        <!-- Section: Base OBD2 -->
+        <section id="section-obd2" class="app-section hidden">
+            <div class="section-content glass-panel">
+                <h2>Base de Données OBD2</h2>
+                <p class="subtitle">Recherchez un code ou un mot-clé. Cliquez sur un code pour l'utiliser dans le diagnostic.</p>
+                <div class="obd2-search-bar">
+                    <input type="text" id="obd2Search" placeholder="Rechercher : P0171, catalyseur, lambda...">
+                </div>
+                <div id="obd2Results" class="obd2-results"></div>
+            </div>
+        </section>
+
+        <!-- Section: Historique -->
+        <section id="section-historique" class="app-section hidden">
+            <div class="section-content glass-panel">
+                <div class="historique-header">
+                    <h2>Historique des Diagnostics</h2>
+                    <button type="button" id="clearHistoryBtn" class="btn danger-btn">🗑️ Effacer tout</button>
+                </div>
+                <p class="subtitle">Les 10 derniers diagnostics sauvegardés sur cet appareil.</p>
+                <div id="historiqueList" class="historique-list"></div>
+            </div>
+        </section>
+
+        <!-- Zone d'impression (masquée en mode normal) -->
+        <div id="printZone" class="print-zone"></div>
+    </div>
+
+    <!-- API Key Modal -->
+    <div id="settingsModal" class="modal hidden">
+        <div class="modal-content glass-panel">
+            <div class="modal-header">
+                <h3>Configuration IA</h3>
+                <button id="closeModalBtn" class="close-btn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p>Choisissez votre fournisseur d'IA et entrez sa clé API.</p>
+
+                <div class="form-group">
+                    <label for="aiProvider">Fournisseur d'IA</label>
+                    <select id="aiProvider">
+                        <option value="gemini">Google Gemini (Recommandé)</option>
+                        <option value="claude">Anthropic Claude</option>
+                        <option value="deepseek">DeepSeek</option>
+                        <option value="grok">xAI Grok</option>
+                    </select>
+                </div>
+
+                <div class="form-group key-group" id="group-gemini">
+                    <label for="apiKey_gemini">Clé API Gemini</label>
+                    <input type="password" id="apiKey_gemini" placeholder="AIzaSy...">
+                </div>
+
+                <div class="form-group key-group hidden" id="group-claude">
+                    <label for="apiKey_claude">Clé API Claude</label>
+                    <input type="password" id="apiKey_claude" placeholder="sk-ant-...">
+                </div>
+
+                <div class="form-group key-group hidden" id="group-deepseek">
+                    <label for="apiKey_deepseek">Clé API DeepSeek</label>
+                    <input type="password" id="apiKey_deepseek" placeholder="sk-...">
+                </div>
+
+                <div class="form-group key-group hidden" id="group-grok">
+                    <label for="apiKey_grok">Clé API Grok</label>
+                    <input type="password" id="apiKey_grok" placeholder="xai-...">
+                </div>
+
+                <div class="form-group">
+                    <label for="customModel">Nom du Modèle (Optionnel)</label>
+                    <input type="text" id="customModel" placeholder="Laissez vide pour le défaut">
+                    <p style="color: var(--text-muted); font-size: 0.75rem; margin-top: 0.25rem;">
+                        Si l'API affiche une erreur de modèle, entrez ici un modèle valide (ex: claude-sonnet-4-6, gemini-2.5-pro).
+                    </p>
+                </div>
+
+                <button id="saveSettingsBtn" class="btn primary-btn">Sauvegarder</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal zoom schéma -->
+    <div id="svgZoomModal" class="svg-zoom-modal hidden">
+        <div class="svg-zoom-backdrop"></div>
+        <div class="svg-zoom-content">
+            <button type="button" class="svg-zoom-close" id="svgZoomClose">&times;</button>
+            <div id="svgZoomBody"></div>
+        </div>
+    </div>
+
+    <!-- Navigation mobile (bottom bar) -->
+    <nav class="mobile-nav" id="mobileNav" aria-label="Navigation mobile">
+        <button type="button" class="mobile-nav-btn active" data-section="diagnostic">
+            <span class="mobile-nav-icon">🔧</span>
+            <span>Diagnostic</span>
+        </button>
+        <button type="button" class="mobile-nav-btn" data-section="obd2">
+            <span class="mobile-nav-icon">🔍</span>
+            <span>OBD2</span>
+        </button>
+        <button type="button" class="mobile-nav-btn" data-section="historique">
+            <span class="mobile-nav-icon">📋</span>
+            <span>Historique</span>
+        </button>
+        <button type="button" class="mobile-nav-btn" id="mobileSettingsBtn">
+            <span class="mobile-nav-icon">⚙️</span>
+            <span>Paramètres</span>
+        </button>
+    </nav>
+
+    <script src="https://cdn.jsdelivr.net/npm/marked@14/marked.min.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
