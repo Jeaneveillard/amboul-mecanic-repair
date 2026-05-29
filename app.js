@@ -159,25 +159,12 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // ===== Modal Elements =====
-    const settingsBtn = document.getElementById('settingsBtn');
-    const settingsModal = document.getElementById('settingsModal');
-    const closeModalBtn = document.getElementById('closeModalBtn');
-    const saveSettingsBtn = document.getElementById('saveSettingsBtn');
+    const settingsBtn      = document.getElementById('settingsBtn');
+    const settingsModal    = document.getElementById('settingsModal');
+    const closeModalBtn    = document.getElementById('closeModalBtn');
+    const saveSettingsBtn  = document.getElementById('saveSettingsBtn');
     const customModelInput = document.getElementById('customModel');
     const aiProviderSelect = document.getElementById('aiProvider');
-    const apiKeyInputs = {
-        gemini: document.getElementById('apiKey_gemini'),
-        claude: document.getElementById('apiKey_claude'),
-        deepseek: document.getElementById('apiKey_deepseek'),
-        grok: document.getElementById('apiKey_grok')
-    };
-    const keyGroups = {
-        pollinations: document.getElementById('group-pollinations'),
-        gemini: document.getElementById('group-gemini'),
-        claude: document.getElementById('group-claude'),
-        deepseek: document.getElementById('group-deepseek'),
-        grok: document.getElementById('group-grok')
-    };
 
     // ===== Sécurité : échappement HTML =====
     function escHtml(str) {
@@ -266,22 +253,9 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // ===== Modal Logic =====
-    const updateKeyGroupVisibility = () => {
-        const provider = aiProviderSelect.value;
-        Object.values(keyGroups).forEach(group => group.classList.add('hidden'));
-        if (keyGroups[provider]) keyGroups[provider].classList.remove('hidden');
-    };
-
-    aiProviderSelect.addEventListener('change', updateKeyGroupVisibility);
-
     const openModal = () => {
-        aiProviderSelect.value = localStorage.getItem('ai_provider') || 'pollinations';
-        apiKeyInputs.gemini.value = localStorage.getItem('api_key_gemini') || '';
-        apiKeyInputs.claude.value = localStorage.getItem('api_key_claude') || '';
-        apiKeyInputs.deepseek.value = localStorage.getItem('api_key_deepseek') || '';
-        apiKeyInputs.grok.value = localStorage.getItem('api_key_grok') || '';
-        customModelInput.value = localStorage.getItem('custom_model') || '';
-        updateKeyGroupVisibility();
+        if (aiProviderSelect) aiProviderSelect.value = localStorage.getItem('ai_provider') || 'pollinations';
+        if (customModelInput) customModelInput.value = localStorage.getItem('custom_model') || '';
         const backendUrlInput = document.getElementById('backendUrlInput');
         if (backendUrlInput) backendUrlInput.value = getBackendUrl();
         const emailDisplay = document.getElementById('settingsUserEmail');
