@@ -150,6 +150,13 @@ Adopte un ton Technique, Détaillé, Concis, Pédagogique.`;
         grok: document.getElementById('group-grok')
     };
 
+    // ===== Sécurité : échappement HTML =====
+    function escHtml(str) {
+        return String(str ?? '').replace(/[&<>"']/g, c => ({
+            '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+        }[c]));
+    }
+
     // ===== Navigation (header + mobile bottom nav) =====
     const navBtns = document.querySelectorAll('.nav-btn');
     const mobileNavBtns = document.querySelectorAll('.mobile-nav-btn[data-section]');
@@ -363,11 +370,11 @@ Adopte un ton Technique, Détaillé, Concis, Pédagogique.`;
             <div class="historique-card">
                 <div class="historique-card-header">
                     <div>
-                        <div class="historique-vehicule">${entry.make} ${entry.model} (${entry.year})</div>
-                        <p class="historique-symptom">${entry.symptom}</p>
+                        <div class="historique-vehicule">${escHtml(entry.make)} ${escHtml(entry.model)} (${escHtml(entry.year)})</div>
+                        <p class="historique-symptom">${escHtml(entry.symptom)}</p>
                     </div>
                     <div class="historique-meta">
-                        <span class="historique-provider">${entry.provider}</span>
+                        <span class="historique-provider">${escHtml(entry.provider)}</span>
                         <span>${entry.date}</span>
                     </div>
                 </div>
@@ -406,9 +413,11 @@ Adopte un ton Technique, Détaillé, Concis, Pédagogique.`;
     const COL_STORAGE_KEY = 'amboul_col_widths';
 
     function applyStoredColWidths() {
+        // Ne pas appliquer les largeurs sauvegardées sur mobile/petite tablette :
+        // inline style outrepasse les media queries CSS et casse la mise en page.
+        if (window.innerWidth <= 1100) return;
         const saved = localStorage.getItem(COL_STORAGE_KEY);
         if (!saved) return;
-        // Rejeter les valeurs sauvegardées corrompues (ex: NaN ou valeurs non-pixel)
         if (saved.includes('NaN') || saved.includes('fr') || saved.includes('auto')) {
             localStorage.removeItem(COL_STORAGE_KEY);
             return;
@@ -549,7 +558,7 @@ Adopte un ton Technique, Détaillé, Concis, Pédagogique.`;
 
     // ===== Photo colonne gauche (persistante) =====
     async function updateVehiclePhoto(make, model, year) {
-        vehicleSideBadge.innerHTML = `<span>${make}</span><span style="opacity:0.75">${model}</span><span class="year-tag">${year}</span>`;
+        vehicleSideBadge.innerHTML = `<span>${escHtml(make)}</span><span style="opacity:0.75">${escHtml(model)}</span><span class="year-tag">${escHtml(year)}</span>`;
         vehicleSidePhoto.classList.add('hidden');
         vehicleSideFallback.classList.remove('hidden');
 
@@ -750,19 +759,19 @@ Adopte un ton Technique, Détaillé, Concis, Pédagogique.`;
             if (gen !== _imgGeneration) return; // diagnostic re-lancé — ignorer
             const el = document.getElementById(`pimg-${i}`);
             if (!src || !el) return;
-            const safeSrc = src.replace(/'/g, '%27');
-            const safeLabel = part.label.replace(/'/g, '&#39;');
-            el.innerHTML = `<img src="${src}" alt="${part.label}" class="part-card-photo"
-                onclick="zoomPartPhoto('${safeSrc}', '${safeLabel}')"
-                onerror="this.parentElement.innerHTML='<span class=part-icon-fb>${getPartEmoji(part.zone)}</span>'">`;
+            // encodeURIComponent évite l'injection : &#39; est décodé par le parseur HTML
+            // avant exécution JS — encodeURIComponent encode tout caractère dangereux.
+            el.innerHTML = `<img src="${escHtml(src)}" alt="${escHtml(part.label)}" class="part-card-photo"
+                onclick="zoomPartPhoto(decodeURIComponent('${encodeURIComponent(src)}'), decodeURIComponent('${encodeURIComponent(part.label)}'))"
+                onerror="this.parentElement.innerHTML='<span class=part-icon-fb>${escHtml(getPartEmoji(part.zone))}</span>'">`;
         }));
     }
 
     window.zoomPartPhoto = function(src, label) {
         svgZoomBody.innerHTML = `
             <div class="part-zoom-body">
-                <div class="part-zoom-label">${label}</div>
-                <img src="${src}" alt="${label}" class="part-zoom-img">
+                <div class="part-zoom-label">${escHtml(label)}</div>
+                <img src="${escHtml(src)}" alt="${escHtml(label)}" class="part-zoom-img">
             </div>`;
         svgZoomModal.classList.remove('hidden');
     };
@@ -854,9 +863,9 @@ Adopte un ton Technique, Détaillé, Concis, Pédagogique.`;
         printZone.innerHTML = `
             <h1>🔧 Amboul Mecanic Repair</h1>
             <p style="color:#555; margin-bottom:1rem;">Rapport de diagnostic — ${new Date().toLocaleString('fr-CA')}</p>
-            <h2>Véhicule : ${make} ${model} (${year})</h2>
+            <h2>Véhicule : ${escHtml(make)} ${escHtml(model)} (${escHtml(year)})</h2>
             <h3>Symptômes / Codes :</h3>
-            <p>${symptom}</p>
+            <p>${escHtml(symptom)}</p>
             <h3>Diagnostic IA :</h3>
             ${resultContainer.innerHTML}
         `;
@@ -975,9 +984,12 @@ Adopte un ton Technique, Détaillé, Concis, Pédagogique.`;
                 textResponse = data.content[0].text;
             }
 
-            const parsedHtml = typeof window.marked !== 'undefined'
+            const rawHtml = typeof window.marked !== 'undefined'
                 ? window.marked.parse(textResponse)
                 : `<pre style="white-space:pre-wrap;font-family:inherit;">${textResponse}</pre>`;
+            const parsedHtml = typeof window.DOMPurify !== 'undefined'
+                ? window.DOMPurify.sanitize(rawHtml, { USE_PROFILES: { html: true } })
+                : rawHtml;
 
             resultContainer.innerHTML = parsedHtml;
             addSymptomChecks();

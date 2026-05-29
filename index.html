@@ -165,6 +165,7 @@
                         <div>
                             <strong>Aucune clé requise</strong>
                             <p>Utilise <a href="https://pollinations.ai" target="_blank" rel="noopener">Pollinations.ai</a> — service IA gratuit et open-source. Peut être plus lent aux heures de pointe.</p>
+                            <p class="privacy-warning">⚠️ Confidentialité : vos données (véhicule, symptômes) sont envoyées à Pollinations.ai. Utilisez un fournisseur avec clé API pour plus de confidentialité.</p>
                         </div>
                     </div>
                 </div>
@@ -192,12 +193,10 @@
                 <div class="form-group">
                     <label for="customModel">Nom du Modèle (Optionnel)</label>
                     <input type="text" id="customModel" placeholder="Laissez vide pour le défaut">
-                    <p style="color: var(--text-muted); font-size: 0.75rem; margin-top: 0.25rem;">
-                        Si l'API affiche une erreur de modèle, entrez ici un modèle valide (ex: claude-sonnet-4-6, gemini-2.5-pro).
-                    </p>
+                    <p class="field-hint">Si l'API affiche une erreur de modèle, entrez ici un modèle valide (ex: claude-sonnet-4-6, gemini-2.5-pro).</p>
                 </div>
 
-                <button id="saveSettingsBtn" class="btn primary-btn">Sauvegarder</button>
+                <button type="button" id="saveSettingsBtn" class="btn primary-btn">Sauvegarder</button>
             </div>
         </div>
     </div>
@@ -231,6 +230,7 @@
         </button>
     </nav>
 
+    <script src="https://cdn.jsdelivr.net/npm/dompurify@3/dist/purify.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked@14/marked.min.js"></script>
     <script src="app.js"></script>
 </body>

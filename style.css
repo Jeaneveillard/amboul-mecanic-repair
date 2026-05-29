@@ -1154,6 +1154,19 @@ select option {
     text-decoration: underline;
 }
 
+.privacy-warning {
+    margin-top: 0.4rem;
+    color: var(--warning-color);
+    font-size: 0.72rem;
+    line-height: 1.4;
+}
+
+.field-hint {
+    color: var(--text-muted);
+    font-size: 0.75rem;
+    margin-top: 0.25rem;
+}
+
 /* Modal */
 .modal {
     position: fixed;
