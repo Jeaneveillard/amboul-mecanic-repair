@@ -56,7 +56,7 @@ async function callDiagnose({ make, model, year, symptom, provider }) {
 // Fallback Pollinations direct (pas de backend configuré)
 async function callPollinationsDirect({ make, model, year, symptom }) {
     const userPrompt = `Véhicule: ${make} ${model} (Année: ${year})\nSymptômes/Codes: ${symptom}\nVeuillez analyser et fournir un diagnostic selon vos instructions systémiques.`;
-    const resp = await fetch('https://text.pollinations.ai/', {
+    const resp = await fetch('https://text.pollinations.ai/openai', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -70,5 +70,6 @@ async function callPollinationsDirect({ make, model, year, symptom }) {
         })
     });
     if (!resp.ok) throw new Error(`[Pollinations] ${resp.statusText}`);
-    return resp.text();
+    const data = await resp.json();
+    return data.choices?.[0]?.message?.content || '';
 }

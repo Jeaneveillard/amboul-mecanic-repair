@@ -37,7 +37,8 @@ router.post('/',
             let result = '';
 
             if (provider === 'pollinations') {
-                const resp = await fetch('https://text.pollinations.ai/', {
+                // Endpoint OpenAI-compatible de Pollinations.ai
+                const resp = await fetch('https://text.pollinations.ai/openai', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -51,7 +52,8 @@ router.post('/',
                     })
                 });
                 if (!resp.ok) throw new Error(`Pollinations: ${resp.statusText}`);
-                result = await resp.text();
+                const data = await resp.json();
+                result = data.choices?.[0]?.message?.content || await resp.text();
 
             } else if (provider === 'gemini') {
                 const key = process.env.GEMINI_API_KEY;
