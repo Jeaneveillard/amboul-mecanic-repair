@@ -143,6 +143,7 @@ Adopte un ton Technique, Détaillé, Concis, Pédagogique.`;
         grok: document.getElementById('apiKey_grok')
     };
     const keyGroups = {
+        pollinations: document.getElementById('group-pollinations'),
         gemini: document.getElementById('group-gemini'),
         claude: document.getElementById('group-claude'),
         deepseek: document.getElementById('group-deepseek'),
@@ -244,7 +245,7 @@ Adopte un ton Technique, Détaillé, Concis, Pédagogique.`;
     aiProviderSelect.addEventListener('change', updateKeyGroupVisibility);
 
     const openModal = () => {
-        aiProviderSelect.value = localStorage.getItem('ai_provider') || 'gemini';
+        aiProviderSelect.value = localStorage.getItem('ai_provider') || 'pollinations';
         apiKeyInputs.gemini.value = localStorage.getItem('api_key_gemini') || '';
         apiKeyInputs.claude.value = localStorage.getItem('api_key_claude') || '';
         apiKeyInputs.deepseek.value = localStorage.getItem('api_key_deepseek') || '';
@@ -867,11 +868,11 @@ Adopte un ton Technique, Détaillé, Concis, Pédagogique.`;
         e.preventDefault();
         clearFormError();
 
-        const provider = localStorage.getItem('ai_provider') || 'gemini';
-        const apiKey = localStorage.getItem(`api_key_${provider}`);
+        const provider = localStorage.getItem('ai_provider') || 'pollinations';
+        const apiKey = provider === 'pollinations' ? null : localStorage.getItem(`api_key_${provider}`);
 
-        if (!apiKey) {
-            showFormError(`Clé API ${provider} manquante. Configurez-la dans ⚙️ Paramètres.`);
+        if (provider !== 'pollinations' && !apiKey) {
+            showFormError(`Clé API ${provider} manquante. Configurez-la dans ⚙️ Paramètres, ou choisissez le Mode Gratuit.`);
             openModal();
             return;
         }
@@ -893,7 +894,27 @@ Adopte un ton Technique, Détaillé, Concis, Pédagogique.`;
         try {
             let textResponse = '';
 
-            if (provider === 'gemini') {
+            if (provider === 'pollinations') {
+                const model = customModel || 'openai-large';
+                const response = await fetch('https://text.pollinations.ai/', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        messages: [
+                            { role: 'system', content: SYSTEM_PROMPT },
+                            { role: 'user', content: userPrompt }
+                        ],
+                        model,
+                        private: true,
+                        seed: -1
+                    })
+                });
+                if (!response.ok) {
+                    const err = await response.text();
+                    throw new Error(`[Pollinations] ${err || response.statusText}`);
+                }
+                textResponse = await response.text();
+            } else if (provider === 'gemini') {
                 const modelName = customModel || 'gemini-2.5-flash';
                 const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`, {
                     method: 'POST',

@@ -1118,6 +1118,42 @@ select option {
     font-weight: 600;
 }
 
+/* Mode gratuit (Pollinations) */
+.free-mode-info {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    background: rgba(16, 185, 129, 0.08);
+    border: 1px solid rgba(16, 185, 129, 0.25);
+    border-radius: 8px;
+    padding: 0.85rem 1rem;
+}
+
+.free-mode-icon {
+    font-size: 1.25rem;
+    flex-shrink: 0;
+    margin-top: 0.05rem;
+}
+
+.free-mode-info strong {
+    display: block;
+    color: var(--accent-color);
+    font-size: 0.875rem;
+    margin-bottom: 0.25rem;
+}
+
+.free-mode-info p {
+    color: var(--text-muted);
+    font-size: 0.78rem;
+    margin: 0;
+    line-height: 1.4;
+}
+
+.free-mode-info a {
+    color: var(--accent-color);
+    text-decoration: underline;
+}
+
 /* Modal */
 .modal {
     position: fixed;
