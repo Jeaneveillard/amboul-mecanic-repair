@@ -21,7 +21,7 @@ router.post('/',
     requireAuth,
     body('make').trim().notEmpty().isLength({ max: 100 }).withMessage('Marque requise'),
     body('model').trim().notEmpty().isLength({ max: 100 }).withMessage('Modèle requis'),
-    body('year').trim().notEmpty().withMessage('Année requise'),
+    body('year').trim().matches(/^\d{4}$/).withMessage('Année invalide (format YYYY requis)'),
     body('symptom').trim().notEmpty().isLength({ max: 2000 }).withMessage('Symptôme requis'),
     body('provider').isIn(VALID_PROVIDERS).withMessage('Fournisseur invalide'),
     async (req, res) => {
@@ -135,7 +135,9 @@ router.post('/',
             res.json({ result });
         } catch (error) {
             console.error('Diagnose error:', error.message);
-            res.status(500).json({ error: error.message });
+            // Ne pas exposer les détails internes (clés API partielles, URLs, etc.)
+            const isKnown = error.message.startsWith('[') || error.message.includes('configuré');
+            res.status(500).json({ error: isKnown ? error.message : 'Erreur serveur lors du diagnostic' });
         }
     }
 );
