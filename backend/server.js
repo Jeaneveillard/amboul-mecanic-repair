@@ -10,9 +10,10 @@ const { requireAuth } = require('./middleware/auth');
 
 const app = express();
 
-// CORS — accepte FRONTEND_URL + null (file:// local)
+// CORS — accepte FRONTEND_URL + GitHub Pages + null (file:// local)
 const allowedOrigins = [
     process.env.FRONTEND_URL,
+    'https://jeaneveillard.github.io',
     'null'
 ].filter(Boolean);
 
