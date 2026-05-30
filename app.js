@@ -41,25 +41,18 @@ document.addEventListener('DOMContentLoaded', () => {
         showAuthOverlay();
     }
 
+    // Afficher l'onglet Admin si connecté en tant qu'admin
+    if (isAdmin() && getBackendUrl()) {
+        document.getElementById('adminNavBtn')?.classList.remove('hidden');
+    }
+
     // ===== Logique overlay connexion =====
     // showAuthOverlay / hideAuthOverlay sont définies dans auth.js (chargé avant)
     const authForm    = document.getElementById('authForm');
     const authError   = document.getElementById('authError');
     const authBtnText = document.getElementById('authBtnText');
-    const authToggleBtn  = document.getElementById('authToggleBtn');
-    const authToggleText = document.getElementById('authToggleText');
     const authSubmitBtn  = document.getElementById('authSubmitBtn');
     const authFreeBtn    = document.getElementById('authFreeBtn');
-
-    let authMode = 'login';
-
-    authToggleBtn?.addEventListener('click', () => {
-        authMode = authMode === 'login' ? 'register' : 'login';
-        authBtnText.textContent    = authMode === 'login' ? t('auth.signin')     : t('auth.register');
-        authToggleBtn.textContent  = authMode === 'login' ? t('auth.register')   : t('auth.signin');
-        authToggleText.textContent = authMode === 'login' ? t('auth.no_account') : t('auth.have_account');
-        authError.classList.add('hidden');
-    });
 
     authFreeBtn?.addEventListener('click', () => hideAuthOverlay());
 
@@ -73,8 +66,11 @@ document.addEventListener('DOMContentLoaded', () => {
         loaderEl.classList.remove('hidden');
         authSubmitBtn.disabled = true;
         try {
-            authMode === 'login' ? await login(email, password) : await register(email, password);
+            await login(email, password);
             hideAuthOverlay();
+            if (isAdmin() && getBackendUrl()) {
+                document.getElementById('adminNavBtn')?.classList.remove('hidden');
+            }
             const emailDisplay = document.getElementById('settingsUserEmail');
             if (emailDisplay) emailDisplay.textContent = getUser() || '—';
         } catch (err) {
@@ -207,6 +203,10 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         document.querySelectorAll(`.nav-btn[data-section="${sectionId}"], .mobile-nav-btn[data-section="${sectionId}"]`)
             .forEach(b => b.classList.add('active'));
+
+        if (sectionId === 'admin' && isAdmin()) {
+            loadAdminUsers();
+        }
     }
 
     navBtns.forEach(btn => btn.addEventListener('click', () => showSection(btn.dataset.section)));
@@ -943,6 +943,104 @@ document.addEventListener('DOMContentLoaded', () => {
             setLoading(false);
         }
     }
+
+    // ===== Panneau Admin =====
+    const adminCreateBtn      = document.getElementById('adminCreateBtn');
+    const adminNewEmail       = document.getElementById('adminNewEmail');
+    const adminNewPassword    = document.getElementById('adminNewPassword');
+    const adminCreateError    = document.getElementById('adminCreateError');
+    const adminCreateSuccess  = document.getElementById('adminCreateSuccess');
+    const adminUsersContainer = document.getElementById('adminUsersContainer');
+    const adminUsersTitle     = document.getElementById('adminUsersTitle');
+
+    async function loadAdminUsers() {
+        if (!adminUsersContainer || !getBackendUrl()) return;
+        try {
+            const resp = await fetch(`${getBackendUrl()}/api/admin/users`, {
+                headers: { 'Authorization': `Bearer ${getToken()}` }
+            });
+            if (!resp.ok) {
+                adminUsersContainer.innerHTML = '<p class="admin-empty">Erreur de chargement.</p>';
+                return;
+            }
+            const users = await resp.json();
+            if (adminUsersTitle) adminUsersTitle.textContent = `Comptes actifs (${users.length})`;
+            if (users.length === 0) {
+                adminUsersContainer.innerHTML = '<p class="admin-empty">Aucun mécanicien enregistré.</p>';
+                return;
+            }
+            adminUsersContainer.innerHTML = users.map(u => `
+                <div class="admin-user-row">
+                    <div class="admin-user-info">
+                        <span class="admin-user-email">📧 ${escHtml(u.email)}</span>
+                        <span class="admin-user-date">Créé le ${new Date(u.created_at).toLocaleDateString('fr-CA')}</span>
+                    </div>
+                    <button type="button" class="btn danger-btn admin-revoke-btn"
+                        onclick="adminRevoke(${u.id}, '${escHtml(u.email)}')">
+                        Révoquer
+                    </button>
+                </div>
+            `).join('');
+        } catch (err) {
+            adminUsersContainer.innerHTML = '<p class="admin-empty">Erreur réseau.</p>';
+        }
+    }
+
+    window.adminRevoke = async function(id, email) {
+        if (!confirm(`Révoquer l'accès de ${email} ?\n\nCette action est irréversible.`)) return;
+        const resp = await fetch(`${getBackendUrl()}/api/admin/users/${id}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${getToken()}` }
+        });
+        const data = await resp.json();
+        if (resp.ok) {
+            await loadAdminUsers();
+        } else {
+            alert(data.error || 'Erreur lors de la révocation');
+        }
+    };
+
+    adminCreateBtn?.addEventListener('click', async () => {
+        if (!adminCreateError || !adminCreateSuccess) return;
+        adminCreateError.classList.add('hidden');
+        adminCreateSuccess.classList.add('hidden');
+
+        const email    = adminNewEmail?.value.trim() || '';
+        const password = adminNewPassword?.value || '';
+
+        if (!email || !password) {
+            adminCreateError.textContent = 'Email et mot de passe requis.';
+            adminCreateError.classList.remove('hidden');
+            return;
+        }
+
+        const origText = adminCreateBtn.textContent;
+        adminCreateBtn.disabled = true;
+        adminCreateBtn.textContent = '...';
+
+        const resp = await fetch(`${getBackendUrl()}/api/admin/users`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${getToken()}`
+            },
+            body: JSON.stringify({ email, password })
+        });
+        const data = await resp.json();
+        adminCreateBtn.disabled = false;
+        adminCreateBtn.textContent = origText;
+
+        if (resp.ok) {
+            if (adminNewEmail)    adminNewEmail.value    = '';
+            if (adminNewPassword) adminNewPassword.value = '';
+            adminCreateSuccess.textContent = `✅ Compte créé pour ${escHtml(data.email)} — mot de passe : ${escHtml(password)}`;
+            adminCreateSuccess.classList.remove('hidden');
+            await loadAdminUsers();
+        } else {
+            adminCreateError.textContent = data.error || 'Erreur lors de la création du compte.';
+            adminCreateError.classList.remove('hidden');
+        }
+    });
 
     // ===== Form Submit =====
     form.addEventListener('submit', async (e) => {

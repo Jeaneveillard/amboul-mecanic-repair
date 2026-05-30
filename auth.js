@@ -3,6 +3,13 @@ const AUTH_TOKEN_KEY  = 'amboul_jwt';
 const AUTH_USER_KEY   = 'amboul_user';
 const BACKEND_URL_KEY = 'amboul_backend_url';
 
+// Email de l'administrateur (correspond à ADMIN_EMAIL dans backend/.env)
+const ADMIN_EMAIL = 'jeaneveillard@gmail.com';
+
+function isAdmin() {
+    return getUser() === ADMIN_EMAIL;
+}
+
 // ===== Getters =====
 function getToken()      { return localStorage.getItem(AUTH_TOKEN_KEY); }
 function getUser()       { return localStorage.getItem(AUTH_USER_KEY); }
