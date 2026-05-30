@@ -321,12 +321,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // ===== Modal Logic =====
     const openModal = () => {
-        if (aiProviderSelect) aiProviderSelect.value = localStorage.getItem('ai_provider') || 'pollinations';
-        if (customModelInput) customModelInput.value = localStorage.getItem('custom_model') || '';
-        const backendUrlInput = document.getElementById('backendUrlInput');
-        if (backendUrlInput) backendUrlInput.value = getBackendUrl();
         const emailDisplay = document.getElementById('settingsUserEmail');
         if (emailDisplay) emailDisplay.textContent = getUser() || '—';
+
+        // Champs réservés à l'admin — cachés pour les mécaniciens
+        const adminOnlyFields = document.querySelectorAll('.settings-admin-only');
+        adminOnlyFields.forEach(el => el.classList.toggle('hidden', !isAdmin()));
+
+        if (isAdmin()) {
+            if (aiProviderSelect) aiProviderSelect.value = localStorage.getItem('ai_provider') || 'pollinations';
+            if (customModelInput) customModelInput.value = localStorage.getItem('custom_model') || '';
+            const backendUrlInput = document.getElementById('backendUrlInput');
+            if (backendUrlInput) backendUrlInput.value = getBackendUrl();
+        }
+
         settingsModal.classList.remove('hidden');
     };
 
