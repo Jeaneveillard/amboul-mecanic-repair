@@ -73,4 +73,26 @@ router.delete('/users/:id', requireAdmin, async (req, res) => {
     }
 });
 
+// PATCH /api/admin/users/:id/password — changer le mot de passe d'un mécanicien
+router.patch('/users/:id/password',
+    requireAdmin,
+    body('password').isLength({ min: 8 }).withMessage('Mot de passe minimum 8 caractères'),
+    validate,
+    async (req, res) => {
+        try {
+            const db = await getDb();
+            const user = await db.get('SELECT id, email FROM users WHERE id = ?', [req.params.id]);
+            if (!user) return res.status(404).json({ error: 'Utilisateur introuvable' });
+            if (user.email === process.env.ADMIN_EMAIL) {
+                return res.status(400).json({ error: 'Utilisez /setup pour changer le mot de passe admin' });
+            }
+            const hash = await bcrypt.hash(req.body.password, 12);
+            await db.run('UPDATE users SET password_hash = ? WHERE id = ?', [hash, req.params.id]);
+            res.json({ message: 'Mot de passe mis à jour', email: user.email });
+        } catch (err) {
+            res.status(500).json({ error: 'Erreur serveur' });
+        }
+    }
+);
+
 module.exports = router;

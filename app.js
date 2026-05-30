@@ -985,16 +985,44 @@ document.addEventListener('DOMContentLoaded', () => {
                         <span class="admin-user-email">📧 ${escHtml(u.email)}</span>
                         <span class="admin-user-date">Créé le ${new Date(u.created_at).toLocaleDateString('fr-CA')}</span>
                     </div>
-                    <button type="button" class="btn danger-btn admin-revoke-btn"
-                        onclick="adminRevoke(${u.id}, '${escHtml(u.email)}')">
-                        Révoquer
-                    </button>
+                    <div class="admin-user-actions">
+                        <button type="button" class="btn secondary-btn admin-pwd-btn"
+                            onclick="adminChangePassword(${u.id}, '${escHtml(u.email)}')">
+                            🔑 Nouveau MDP
+                        </button>
+                        <button type="button" class="btn danger-btn admin-revoke-btn"
+                            onclick="adminRevoke(${u.id}, '${escHtml(u.email)}')">
+                            Révoquer
+                        </button>
+                    </div>
                 </div>
             `).join('');
         } catch (err) {
             adminUsersContainer.innerHTML = '<p class="admin-empty">Erreur réseau.</p>';
         }
     }
+
+    window.adminChangePassword = async function(id, email) {
+        const newPwd = prompt(`Nouveau mot de passe pour ${email} :\n(minimum 8 caractères)`);
+        if (!newPwd) return;
+        if (newPwd.length < 8) { alert('Minimum 8 caractères.'); return; }
+
+        const resp = await fetch(`${getBackendUrl()}/api/admin/users/${id}/password`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${getToken()}` },
+            body: JSON.stringify({ password: newPwd })
+        });
+        const data = await resp.json();
+        if (resp.ok) {
+            if (adminCreateSuccess) {
+                adminCreateSuccess.textContent = `🔑 Mot de passe changé pour ${escHtml(email)} — nouveau MDP : ${escHtml(newPwd)}`;
+                adminCreateSuccess.classList.remove('hidden');
+                adminCreateError?.classList.add('hidden');
+            }
+        } else {
+            alert(data.error || 'Erreur lors du changement de mot de passe');
+        }
+    };
 
     window.adminRevoke = async function(id, email) {
         if (!confirm(`Révoquer l'accès de ${email} ?\n\nCette action est irréversible.`)) return;
@@ -1043,7 +1071,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (resp.ok) {
             if (adminNewEmail)    adminNewEmail.value    = '';
             if (adminNewPassword) adminNewPassword.value = '';
-            adminCreateSuccess.textContent = `✅ Compte créé pour ${escHtml(data.email)} — mot de passe : ${escHtml(password)}`;
+            adminCreateSuccess.innerHTML = `✅ Compte créé pour <strong>${escHtml(data.email)}</strong><br>🔑 Mot de passe : <strong style="font-size:1.1rem;letter-spacing:0.05em">${escHtml(password)}</strong><br><small>Copie ce mot de passe et donne-le au mécanicien.</small>`;
             adminCreateSuccess.classList.remove('hidden');
             await loadAdminUsers();
         } else {

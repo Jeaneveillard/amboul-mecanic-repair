@@ -1733,7 +1733,14 @@ select option {
     color: var(--text-muted);
 }
 
-.admin-revoke-btn {
+.admin-user-actions {
+    display: flex;
+    gap: 0.5rem;
+    flex-shrink: 0;
+}
+
+.admin-revoke-btn,
+.admin-pwd-btn {
     width: auto;
     padding: 0.4rem 0.85rem;
     font-size: 0.8rem;
