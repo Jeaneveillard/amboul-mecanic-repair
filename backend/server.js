@@ -77,7 +77,26 @@ app.use((err, req, res, next) => {
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
+
+// Création automatique du compte admin au démarrage si inexistant
+async function seedAdminIfNeeded() {
+    if (!process.env.ADMIN_EMAIL || !process.env.ADMIN_INITIAL_PASSWORD) return;
+    try {
+        const { getDb } = require('./db');
+        const bcrypt = require('bcryptjs');
+        const db = await getDb();
+        const existing = await db.get('SELECT id FROM users WHERE email = ?', [process.env.ADMIN_EMAIL]);
+        if (!existing) {
+            const hash = await bcrypt.hash(process.env.ADMIN_INITIAL_PASSWORD, 12);
+            await db.run('INSERT INTO users (email, password_hash) VALUES (?, ?)', [process.env.ADMIN_EMAIL, hash]);
+            console.log('✅ Compte admin créé automatiquement :', process.env.ADMIN_EMAIL);
+        }
+    } catch (err) {
+        console.error('Erreur création admin auto:', err.message);
+    }
+}
+
+app.listen(PORT, async () => {
     console.log(`✅ Amboul backend démarré sur le port ${PORT}`);
-    if (!process.env.JWT_SECRET) console.warn('⚠️  JWT_SECRET non défini !');
+    await seedAdminIfNeeded();
 });
