@@ -10,21 +10,14 @@ const { requireAuth } = require('./middleware/auth');
 
 const app = express();
 
-// CORS — accepte FRONTEND_URL + GitHub Pages + null (file:// local)
-const allowedOrigins = [
-    process.env.FRONTEND_URL,
-    'https://jeaneveillard.github.io',
-    'null'
-].filter(Boolean);
-
+// CORS — permissif pour compatibilité GitHub Pages + localhost
 app.use(cors({
-    origin: (origin, cb) => {
-        if (!origin || allowedOrigins.includes(origin)) return cb(null, true);
-        cb(new Error('CORS non autorisé pour cette origine'));
-    },
-    methods: ['GET', 'POST', 'DELETE'],
-    allowedHeaders: ['Content-Type', 'Authorization']
+    origin: true,
+    methods: ['GET', 'POST', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    credentials: false
 }));
+app.options('*', cors());
 
 app.use(express.json({ limit: '50kb' }));
 
