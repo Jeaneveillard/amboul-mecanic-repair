@@ -20,6 +20,32 @@ router.post('/register', (req, res) => {
     res.status(403).json({ error: 'L\'inscription publique est désactivée. Contactez l\'administrateur.' });
 });
 
+// POST /api/auth/setup — crée le compte admin si inexistant (protégé par ADMIN_EMAIL)
+router.post('/setup',
+    body('email').isEmail().normalizeEmail(),
+    body('password').isLength({ min: 8 }),
+    validate,
+    async (req, res) => {
+        const { email, password } = req.body;
+        if (email !== process.env.ADMIN_EMAIL) {
+            return res.status(403).json({ error: 'Non autorisé' });
+        }
+        try {
+            const db = await getDb();
+            const existing = await db.get('SELECT id FROM users WHERE email = ?', [email]);
+            if (existing) {
+                return res.status(409).json({ error: 'Compte admin déjà créé. Utilisez /login.' });
+            }
+            const hash = await bcrypt.hash(password, 12);
+            const result = await db.run('INSERT INTO users (email, password_hash) VALUES (?, ?)', [email, hash]);
+            const token = jwt.sign({ id: result.lastID, email }, process.env.JWT_SECRET, { expiresIn: '24h' });
+            res.status(201).json({ token, email, message: 'Compte admin créé avec succès' });
+        } catch (err) {
+            res.status(500).json({ error: 'Erreur serveur' });
+        }
+    }
+);
+
 // POST /api/auth/login
 router.post('/login',
     body('email').isEmail().withMessage('Email invalide').normalizeEmail(),
