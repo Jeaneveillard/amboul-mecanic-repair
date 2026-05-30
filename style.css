@@ -313,7 +313,7 @@ body {
 /* Main Content Grid — 4 colonnes + 3 handles */
 .main-content {
     display: grid;
-    grid-template-columns: 200px 6px 1fr 6px 1.3fr 6px 1.1fr;
+    grid-template-columns: minmax(140px, 220px) 14px 1fr 14px 1.3fr 14px 1.1fr;
     gap: 0;
     column-gap: 0;
     flex: 1;
@@ -339,33 +339,43 @@ body {
 
 /* Handle de redimensionnement entre colonnes */
 .col-resize-handle {
-    width: 6px;
+    width: 14px;
     align-self: stretch;
     cursor: col-resize;
     position: relative;
     z-index: 10;
     background: transparent;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     transition: background 0.2s;
-    border-radius: 3px;
+    border-radius: 4px;
 }
 
-.col-resize-handle::after {
+/* Poignée visuelle : 3 points verticaux */
+.col-resize-handle::before {
     content: '';
     position: absolute;
-    top: 20%;
-    bottom: 20%;
-    left: 2px;
-    width: 2px;
-    background: var(--glass-border);
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 4px;
+    height: 32px;
+    background: radial-gradient(circle, var(--glass-border) 1.5px, transparent 1.5px);
+    background-size: 4px 8px;
     border-radius: 2px;
-    transition: background 0.2s, width 0.15s, left 0.15s;
+    transition: background 0.2s;
 }
 
-.col-resize-handle:hover::after,
-.col-resize-handle.dragging::after {
-    background: var(--primary-color);
-    width: 3px;
-    left: 1.5px;
+.col-resize-handle:hover::before,
+.col-resize-handle.dragging::before {
+    background: radial-gradient(circle, var(--primary-color) 1.5px, transparent 1.5px);
+    background-size: 4px 8px;
+}
+
+.col-resize-handle:hover,
+.col-resize-handle.dragging {
+    background: rgba(59, 130, 246, 0.08);
 }
 
 @media (max-width: 1100px) {
@@ -756,6 +766,8 @@ body {
     padding: 0;
     overflow: hidden;
     min-height: 260px;
+    min-width: 140px;   /* ne peut pas être réduite en dessous */
+    max-width: 320px;   /* ne peut pas être agrandie au-delà */
     display: flex;
     flex-direction: column;
 }
@@ -782,7 +794,8 @@ body {
     width: 100%;
     flex: 1;
     object-fit: cover;
-    object-position: center;
+    /* Cadrer sur le centre-haut : montre le véhicule, pas le sol */
+    object-position: center 30%;
     display: block;
 }
 

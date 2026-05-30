@@ -468,12 +468,14 @@ document.addEventListener('DOMContentLoaded', () => {
             const colAfter = colBefore + 2;
 
             const newWidths = [...startWidths];
-            const minW = 120;
-            newWidths[colBefore] = Math.max(minW, startWidths[colBefore] + delta);
-            newWidths[colAfter] = Math.max(minW, startWidths[colAfter] - delta);
+            // Colonne photo (index 0) : min 140px, max 320px
+            const minPhoto = colBefore === 0 ? 140 : 120;
+            const maxPhoto = colBefore === 0 ? 320 : Infinity;
+            newWidths[colBefore] = Math.min(maxPhoto, Math.max(minPhoto, startWidths[colBefore] + delta));
+            newWidths[colAfter] = Math.max(120, startWidths[colAfter] - delta);
 
             mainContent.style.gridTemplateColumns = newWidths.map((w, i) =>
-                i % 2 === 1 ? '6px' : `${w}px`
+                i % 2 === 1 ? '14px' : `${w}px`
             ).join(' ');
         });
 
@@ -502,11 +504,12 @@ document.addEventListener('DOMContentLoaded', () => {
             const colBefore = hIdx * 2;
             const colAfter = colBefore + 2;
             const newWidths = [...startWidths];
-            const minW = 120;
-            newWidths[colBefore] = Math.max(minW, startWidths[colBefore] + delta);
-            newWidths[colAfter] = Math.max(minW, startWidths[colAfter] - delta);
+            const minPhoto2 = colBefore === 0 ? 140 : 120;
+            const maxPhoto2 = colBefore === 0 ? 320 : Infinity;
+            newWidths[colBefore] = Math.min(maxPhoto2, Math.max(minPhoto2, startWidths[colBefore] + delta));
+            newWidths[colAfter] = Math.max(120, startWidths[colAfter] - delta);
             mainContent.style.gridTemplateColumns = newWidths.map((w, i) =>
-                i % 2 === 1 ? '6px' : `${w}px`
+                i % 2 === 1 ? '14px' : `${w}px`
             ).join(' ');
         }, { passive: false });
 
