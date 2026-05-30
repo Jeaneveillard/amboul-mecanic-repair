@@ -117,30 +117,38 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // ===== Car Data =====
     const carData = {
-        "Audi": ["A3", "A4", "Q3", "Q5"],
-        "BMW": ["Série 1", "Série 3", "X1", "X3", "X5"],
+        // Marques thermiques + hybrides + électriques
+        "Audi": ["A3", "A4", "Q3", "Q5", "e-tron", "e-tron GT", "Q4 e-tron", "Q8 e-tron"],
+        "BMW": ["Série 1", "Série 3", "X1", "X3", "X5", "i3", "i4", "i5", "i7", "iX", "iX1", "iX3"],
+        "BYD": ["Atto 3", "Han EV", "Seal", "Dolphin", "Tang EV", "Atto 2"],
         "Buick": ["Enclave", "Encore", "Envision", "LaCrosse"],
-        "Cadillac": ["Escalade", "XT5", "XT4", "CT5", "CT4"],
-        "Chevrolet": ["Silverado", "Equinox", "Malibu", "Traverse", "Colorado", "Tahoe", "Suburban", "Blazer", "Trax"],
-        "Chrysler": ["300", "Pacifica", "Voyager"],
-        "Citroën": ["C3", "C4", "C5 Aircross", "Berlingo"],
-        "Dacia": ["Sandero", "Duster", "Jogger"],
+        "Cadillac": ["Escalade", "XT5", "XT4", "CT5", "CT4", "Lyriq", "Optiq"],
+        "Chevrolet": ["Silverado", "Equinox", "Malibu", "Traverse", "Colorado", "Tahoe", "Suburban", "Blazer", "Trax", "Bolt EV", "Bolt EUV", "Equinox EV", "Blazer EV", "Silverado EV"],
+        "Chrysler": ["300", "Pacifica", "Voyager", "Pacifica Hybrid"],
+        "Citroën": ["C3", "C4", "C5 Aircross", "Berlingo", "ë-C3", "ë-C4", "ë-Berlingo"],
+        "Dacia": ["Sandero", "Duster", "Jogger", "Spring Electric"],
         "Dodge": ["Ram 1500", "Charger", "Challenger", "Durango", "Journey"],
-        "Fiat": ["500", "Panda", "Tipo"],
-        "Ford": ["F-150", "Escape", "Explorer", "Ranger", "Bronco", "Edge", "Mustang", "Transit", "Fiesta", "Focus", "Puma", "Kuga"],
-        "GMC": ["Sierra 1500", "Terrain", "Acadia", "Canyon", "Yukon"],
-        "Honda": ["Civic", "CR-V", "HR-V", "Jazz"],
-        "Hyundai": ["Tucson", "i20", "Kona", "i30"],
-        "Jeep": ["Wrangler", "Grand Cherokee", "Cherokee", "Compass", "Gladiator", "Renegade"],
-        "Kia": ["Sportage", "Ceed", "Niro", "Picanto"],
+        "Fiat": ["500", "Panda", "Tipo", "500e"],
+        "Ford": ["F-150", "Escape", "Explorer", "Ranger", "Bronco", "Edge", "Mustang", "Transit", "Fiesta", "Focus", "Puma", "Kuga", "Mustang Mach-E", "F-150 Lightning", "E-Transit"],
+        "GMC": ["Sierra 1500", "Terrain", "Acadia", "Canyon", "Yukon", "Hummer EV"],
+        "Honda": ["Civic", "CR-V", "HR-V", "Jazz", "Prologue", "e:Ny1"],
+        "Hyundai": ["Tucson", "i20", "Kona", "i30", "Ioniq 5", "Ioniq 6", "Ioniq 9", "Kona Electric"],
+        "Jeep": ["Wrangler", "Grand Cherokee", "Cherokee", "Compass", "Gladiator", "Renegade", "Avenger EV", "Wrangler 4xe"],
+        "Kia": ["Sportage", "Ceed", "Niro", "Picanto", "EV6", "EV9", "EV3", "Niro EV"],
         "Lincoln": ["Navigator", "Aviator", "Corsair", "Nautilus"],
-        "Mercedes-Benz": ["Classe A", "Classe C", "GLA", "GLC"],
-        "Nissan": ["Qashqai", "Juke", "Micra", "X-Trail"],
-        "Peugeot": ["208", "308", "2008", "3008", "5008", "508"],
-        "RAM": ["1500", "2500", "3500", "ProMaster"],
-        "Renault": ["Clio", "Megane", "Captur", "Kadjar", "Austral", "Twingo", "Scenic"],
-        "Toyota": ["Yaris", "Corolla", "RAV4", "C-HR", "Aygo"],
-        "Volkswagen": ["Golf", "Polo", "Tiguan", "Passat", "T-Roc"]
+        // Marques 100% électriques
+        "Lucid": ["Air", "Gravity"],
+        "Mercedes-Benz": ["Classe A", "Classe C", "GLA", "GLC", "EQA", "EQB", "EQC", "EQE", "EQS", "EQE SUV", "EQS SUV"],
+        "Nissan": ["Qashqai", "Juke", "Micra", "X-Trail", "Leaf", "Ariya"],
+        "Peugeot": ["208", "308", "2008", "3008", "5008", "508", "e-208", "e-2008", "e-308", "e-3008"],
+        "Polestar": ["Polestar 2", "Polestar 3", "Polestar 4"],
+        "Porsche": ["911", "Cayenne", "Macan", "Panamera", "Taycan", "Macan Electric"],
+        "RAM": ["1500", "2500", "3500", "ProMaster", "ProMaster EV"],
+        "Renault": ["Clio", "Megane", "Captur", "Kadjar", "Austral", "Twingo", "Scenic", "Zoe", "Megane E-Tech", "5 E-Tech"],
+        "Rivian": ["R1T", "R1S", "R2"],
+        "Tesla": ["Model S", "Model 3", "Model X", "Model Y", "Cybertruck", "Semi"],
+        "Toyota": ["Yaris", "Corolla", "RAV4", "C-HR", "Aygo", "bZ4X", "Prius PHEV", "RAV4 PHEV"],
+        "Volkswagen": ["Golf", "Polo", "Tiguan", "Passat", "T-Roc", "ID.3", "ID.4", "ID.5", "ID.7", "ID.Buzz"]
     };
 
     // ===== OBD2 Database =====
@@ -195,7 +203,22 @@ document.addEventListener('DOMContentLoaded', () => {
         "U0155": { code: "U0155", description: "Communication perdue avec tableau de bord", causes: ["Tableau de bord hors tension", "Fusible grillé", "Bus CAN interrompu"], gravite: 2, categorie: "Réseau CAN" },
         "B0070": { code: "B0070", description: "Module airbag conducteur — circuit", causes: ["Airbag conducteur défectueux", "Connecteur spiralé usé", "Module airbag en panne"], gravite: 3, categorie: "Carrosserie" },
         "B0075": { code: "B0075", description: "Module airbag passager — circuit", causes: ["Airbag passager défectueux", "Connecteur sous siège corrodé", "Module airbag en panne"], gravite: 3, categorie: "Carrosserie" },
-        "B1000": { code: "B1000", description: "Calculateur de confort — défaut interne", causes: ["Calculateur BSM/BCM défectueux", "Problème d'alimentation", "Mise à jour logicielle requise"], gravite: 2, categorie: "Carrosserie" }
+        "B1000": { code: "B1000", description: "Calculateur de confort — défaut interne", causes: ["Calculateur BSM/BCM défectueux", "Problème d'alimentation", "Mise à jour logicielle requise"], gravite: 2, categorie: "Carrosserie" },
+        // ===== CODES VÉHICULES ÉLECTRIQUES (VE/EV) =====
+        "P0A00": { code: "P0A00", description: "Moteur électrique — capteur position défaut", causes: ["Capteur position moteur défectueux", "Câblage endommagé", "Onduleur moteur défaillant"], gravite: 3, categorie: "Électrique VE" },
+        "P0A09": { code: "P0A09", description: "Convertisseur DC/DC — statut anormal", causes: ["Convertisseur DC/DC défectueux", "Surtension réseau 12V", "Câblage haute tension endommagé"], gravite: 3, categorie: "Électrique VE" },
+        "P0A0A": { code: "P0A0A", description: "Moteur électrique — courant phase U anormal", causes: ["Onduleur défectueux", "Bobinage moteur court-circuité", "Capteur courant défaillant"], gravite: 3, categorie: "Électrique VE" },
+        "P0A1A": { code: "P0A1A", description: "Module de contrôle batterie (BMS) — défaut", causes: ["BMS défectueux", "Problème communication CAN", "Déséquilibre cellules batterie"], gravite: 3, categorie: "Électrique VE" },
+        "P0A7E": { code: "P0A7E", description: "Batterie haute tension — charge faible (SOC bas)", causes: ["Batterie insuffisamment chargée", "Dégradation des cellules", "Fuite de charge"], gravite: 2, categorie: "Électrique VE" },
+        "P0A80": { code: "P0A80", description: "Batterie haute tension — remplacement requis", causes: ["Dégradation sévère cellules (< 70% capacité)", "Court-circuit interne batterie", "Vieillissement accéléré"], gravite: 3, categorie: "Électrique VE" },
+        "P0A94": { code: "P0A94", description: "Convertisseur DC/DC — sous-tension sortie", causes: ["Convertisseur DC/DC usé", "Forte demande électrique 12V", "Câble masse dessené"], gravite: 2, categorie: "Électrique VE" },
+        "P0AFA": { code: "P0AFA", description: "Système batterie — tension générale basse", causes: ["SOC batterie très bas", "Module défectueux", "Fuite haute tension"], gravite: 3, categorie: "Électrique VE" },
+        "P0B00": { code: "P0B00", description: "Chargeur embarqué — défaut général", causes: ["Chargeur OBC défectueux", "Problème câble de charge", "Surtension réseau secteur"], gravite: 2, categorie: "Électrique VE" },
+        "P1A00": { code: "P1A00", description: "Système propulsion électrique — défaut général", causes: ["Onduleur principal défectueux", "Moteur électrique en panne", "BMS en mode protection"], gravite: 3, categorie: "Électrique VE" },
+        "P1A10": { code: "P1A10", description: "Température batterie — trop élevée", causes: ["Système refroidissement batterie défectueux", "Charge rapide répétée", "Conduite intense par fortes chaleurs"], gravite: 3, categorie: "Électrique VE" },
+        "P1A15": { code: "P1A15", description: "Température batterie — trop basse", causes: ["Température extérieure très froide", "Chauffe-batterie défectueux", "Pompe à chaleur hors service"], gravite: 2, categorie: "Électrique VE" },
+        "P1A30": { code: "P1A30", description: "Port de charge — connexion défaillante", causes: ["Port de charge endommagé", "Contacteur de charge HS", "Câble de charge défectueux"], gravite: 2, categorie: "Électrique VE" },
+        "U0110": { code: "U0110", description: "Communication perdue avec module moteur électrique", causes: ["Module onduleur hors tension", "Bus CAN haute tension interrompu", "Fusible haute tension grillé"], gravite: 3, categorie: "Réseau CAN" }
     };
 
     // ===== Modal Elements =====
@@ -687,6 +710,17 @@ document.addEventListener('DOMContentLoaded', () => {
         { key: 'airbag conducteur',        x: 140, y: 50,  color: '#8b5cf6', label: 'Airbag conducteur',   zone: 'cabin' },
         { key: 'airbag passager',          x: 155, y: 48,  color: '#8b5cf6', label: 'Airbag passager',     zone: 'cabin' },
         { key: 'airbag',                   x: 145, y: 50,  color: '#8b5cf6', label: 'Airbag',              zone: 'cabin' },
+        // Véhicules électriques (VE)
+        { key: 'batterie haute tension',   x: 150, y: 78,  color: '#10b981', label: 'Batterie HT (pack)',  zone: 'electrical' },
+        { key: 'pack batterie',            x: 150, y: 78,  color: '#10b981', label: 'Pack batterie',       zone: 'electrical' },
+        { key: 'bms',                      x: 148, y: 70,  color: '#10b981', label: 'BMS (gestionnaire batterie)', zone: 'electrical' },
+        { key: 'onduleur',                 x: 95,  y: 67,  color: '#10b981', label: 'Onduleur (inverter)', zone: 'electrical' },
+        { key: 'moteur électrique',        x: 115, y: 72,  color: '#10b981', label: 'Moteur électrique',   zone: 'transmission' },
+        { key: 'chargeur embarqué',        x: 80,  y: 60,  color: '#10b981', label: 'Chargeur embarqué (OBC)', zone: 'electrical' },
+        { key: 'convertisseur dc',         x: 88,  y: 62,  color: '#10b981', label: 'Convertisseur DC/DC', zone: 'electrical' },
+        { key: 'port de charge',           x: 270, y: 68,  color: '#10b981', label: 'Port de charge',      zone: 'electrical' },
+        { key: 'pompe à chaleur',          x: 22,  y: 63,  color: '#3b82f6', label: 'Pompe à chaleur (VE)', zone: 'engine' },
+        { key: 'frein régénératif',        x: 72,  y: 92,  color: '#10b981', label: 'Frein régénératif',   zone: 'wheel-front' },
     ];
 
     function detectParts(symptom, result) {
