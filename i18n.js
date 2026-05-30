@@ -91,7 +91,7 @@ const TRANSLATIONS = {
         'severity.info': 'Info',
         'severity.warning': 'Attention',
         'severity.critical': 'Critique',
-        'ai.lang_instruction': '',
+        'ai.lang_instruction': 'Répondez UNIQUEMENT en français.',
     },
 
     en: {
@@ -438,16 +438,18 @@ function applyTranslations() {
     if (authFreeEl) authFreeEl.textContent = t('auth.free_mode');
 
     // Settings modal
-    const settTitle = document.querySelector('#settingsModal h3');
-    const settBkLbl = document.querySelector('label[for="backendUrlInput"]');
+    const settTitle   = document.querySelector('#settingsModal h3');
+    const settUserLbl = document.getElementById('settingsUserLabel');
+    const settBkLbl   = document.querySelector('label[for="backendUrlInput"]');
     const settBkHnt = document.querySelector('#backendUrlInput + .field-hint');
     const settPrLbl = document.querySelector('label[for="aiProvider"]');
     const settMdLbl = document.querySelector('label[for="customModel"]');
     const settMdHnt = document.querySelector('#customModel + .field-hint');
     const saveBtnEl = document.getElementById('saveSettingsBtn');
     const logoutEl  = document.getElementById('logoutBtn');
-    if (settTitle)  settTitle.textContent = t('settings.title');
-    if (settBkLbl)  settBkLbl.textContent = t('settings.backend_url');
+    if (settTitle)   settTitle.textContent   = t('settings.title');
+    if (settUserLbl) settUserLbl.textContent = t('settings.user');
+    if (settBkLbl)   settBkLbl.textContent   = t('settings.backend_url');
     if (settBkHnt)  settBkHnt.textContent = t('settings.backend_hint');
     if (settPrLbl)  settPrLbl.textContent = t('settings.provider');
     if (settMdLbl)  settMdLbl.textContent = t('settings.model');

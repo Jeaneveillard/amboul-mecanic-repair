@@ -46,9 +46,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     authToggleBtn?.addEventListener('click', () => {
         authMode = authMode === 'login' ? 'register' : 'login';
-        authBtnText.textContent   = authMode === 'login' ? 'Se connecter' : 'Créer un compte';
-        authToggleBtn.textContent = authMode === 'login' ? 'Créer un compte' : 'Se connecter';
-        authToggleText.textContent = authMode === 'login' ? 'Pas encore de compte ?' : 'Déjà un compte ?';
+        authBtnText.textContent    = authMode === 'login' ? t('auth.signin')     : t('auth.register');
+        authToggleBtn.textContent  = authMode === 'login' ? t('auth.register')   : t('auth.signin');
+        authToggleText.textContent = authMode === 'login' ? t('auth.no_account') : t('auth.have_account');
         authError.classList.add('hidden');
     });
 
