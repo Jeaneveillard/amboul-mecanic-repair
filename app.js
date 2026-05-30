@@ -56,9 +56,10 @@ document.addEventListener('DOMContentLoaded', () => {
         if (isLoggedIn() && isIdleExpired()) logout();
     }, 2 * 60 * 1000);
 
-    // Afficher l'onglet Admin si connecté en tant qu'admin
+    // Afficher l'onglet Admin si connecté en tant qu'admin (header + mobile nav)
     if (isAdmin() && getBackendUrl()) {
         document.getElementById('adminNavBtn')?.classList.remove('hidden');
+        document.getElementById('mobileAdminBtn')?.classList.remove('hidden');
     }
 
     // ===== Logique overlay connexion =====
@@ -96,6 +97,7 @@ document.addEventListener('DOMContentLoaded', () => {
             hideAuthOverlay();
             if (isAdmin() && getBackendUrl()) {
                 document.getElementById('adminNavBtn')?.classList.remove('hidden');
+                document.getElementById('mobileAdminBtn')?.classList.remove('hidden');
             }
             const emailDisplay = document.getElementById('settingsUserEmail');
             if (emailDisplay) emailDisplay.textContent = getUser() || '—';
@@ -1022,35 +1024,42 @@ document.addEventListener('DOMContentLoaded', () => {
         const newPwd = prompt(`Nouveau mot de passe pour ${email} :\n(minimum 8 caractères)`);
         if (!newPwd) return;
         if (newPwd.length < 8) { alert('Minimum 8 caractères.'); return; }
-
-        const resp = await fetch(`${getBackendUrl()}/api/admin/users/${id}/password`, {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${getToken()}` },
-            body: JSON.stringify({ password: newPwd })
-        });
-        const data = await resp.json();
-        if (resp.ok) {
-            if (adminCreateSuccess) {
-                adminCreateSuccess.textContent = `🔑 Mot de passe changé pour ${escHtml(email)} — nouveau MDP : ${escHtml(newPwd)}`;
-                adminCreateSuccess.classList.remove('hidden');
-                adminCreateError?.classList.add('hidden');
+        try {
+            const resp = await fetch(`${getBackendUrl()}/api/admin/users/${encodeURIComponent(id)}/password`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${getToken()}` },
+                body: JSON.stringify({ password: newPwd })
+            });
+            const data = await resp.json();
+            if (resp.ok) {
+                if (adminCreateSuccess) {
+                    adminCreateSuccess.textContent = `🔑 Mot de passe changé pour ${escHtml(email)} — nouveau MDP : ${escHtml(newPwd)}`;
+                    adminCreateSuccess.classList.remove('hidden');
+                    adminCreateError?.classList.add('hidden');
+                }
+            } else {
+                alert(data.error || 'Erreur lors du changement de mot de passe');
             }
-        } else {
-            alert(data.error || 'Erreur lors du changement de mot de passe');
+        } catch (err) {
+            alert('Erreur réseau — réessaie.');
         }
     };
 
     window.adminRevoke = async function(id, email) {
         if (!confirm(`Révoquer l'accès de ${email} ?\n\nCette action est irréversible.`)) return;
-        const resp = await fetch(`${getBackendUrl()}/api/admin/users/${id}`, {
-            method: 'DELETE',
-            headers: { 'Authorization': `Bearer ${getToken()}` }
-        });
-        const data = await resp.json();
-        if (resp.ok) {
-            await loadAdminUsers();
-        } else {
-            alert(data.error || 'Erreur lors de la révocation');
+        try {
+            const resp = await fetch(`${getBackendUrl()}/api/admin/users/${encodeURIComponent(id)}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${getToken()}` }
+            });
+            const data = await resp.json();
+            if (resp.ok) {
+                await loadAdminUsers();
+            } else {
+                alert(data.error || 'Erreur lors de la révocation');
+            }
+        } catch (err) {
+            alert('Erreur réseau — réessaie.');
         }
     };
 

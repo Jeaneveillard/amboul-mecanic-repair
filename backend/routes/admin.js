@@ -1,6 +1,6 @@
 const express = require('express');
 const bcrypt = require('bcryptjs');
-const { body, validationResult } = require('express-validator');
+const { body, param, validationResult } = require('express-validator');
 const { getDb } = require('../db');
 const { requireAdmin } = require('../middleware/adminAuth');
 
@@ -57,7 +57,7 @@ router.post('/users',
 );
 
 // DELETE /api/admin/users/:id — révoquer un compte
-router.delete('/users/:id', requireAdmin, async (req, res) => {
+router.delete('/users/:id', requireAdmin, param('id').isInt().toInt(), validate, async (req, res) => {
     try {
         const db = await getDb();
         const user = await db.get('SELECT id, email FROM users WHERE id = ?', [req.params.id]);
@@ -76,6 +76,7 @@ router.delete('/users/:id', requireAdmin, async (req, res) => {
 // PATCH /api/admin/users/:id/password — changer le mot de passe d'un mécanicien
 router.patch('/users/:id/password',
     requireAdmin,
+    param('id').isInt().toInt(),
     body('password').isLength({ min: 8 }).withMessage('Mot de passe minimum 8 caractères'),
     validate,
     async (req, res) => {
