@@ -17,6 +17,7 @@ const authRoutes = require('./routes/auth');
 const diagnoseRoutes = require('./routes/diagnose');
 const adminRoutes = require('./routes/admin');
 const { requireAuth } = require('./middleware/auth');
+const { initDb } = require('./db');
 
 const app = express();
 
@@ -98,5 +99,6 @@ async function seedAdminIfNeeded() {
 
 app.listen(PORT, async () => {
     console.log(`✅ Amboul backend démarré sur le port ${PORT}`);
-    await seedAdminIfNeeded();
+    await initDb();          // Crée la table si elle n'existe pas
+    await seedAdminIfNeeded(); // Crée le compte admin si absent
 });

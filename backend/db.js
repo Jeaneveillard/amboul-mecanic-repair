@@ -1,27 +1,53 @@
-const sqlite3 = require('sqlite3');
-const { open } = require('sqlite');
-const path = require('path');
+const { Pool } = require('pg');
 
-const DB_PATH = process.env.DB_PATH || path.join(__dirname, 'amboul.db');
+const pool = new Pool({
+    connectionString: process.env.DATABASE_URL,
+    ssl: { rejectUnauthorized: false }
+});
 
-let _db = null;
-
-async function getDb() {
-    if (_db) return _db;
-    _db = await open({
-        filename: DB_PATH,
-        driver: sqlite3.Database
-    });
-    await _db.exec('PRAGMA journal_mode = WAL');
-    await _db.exec(`
-        CREATE TABLE IF NOT EXISTS users (
-            id            INTEGER PRIMARY KEY AUTOINCREMENT,
-            email         TEXT UNIQUE NOT NULL,
-            password_hash TEXT NOT NULL,
-            created_at    DATETIME DEFAULT CURRENT_TIMESTAMP
-        )
-    `);
-    return _db;
+// Convertit les ? SQLite en $1, $2... PostgreSQL
+function toPg(sql) {
+    let i = 0;
+    return sql.replace(/\?/g, () => `$${++i}`);
 }
 
-module.exports = { getDb };
+const db = {
+    get: async (sql, params = []) => {
+        const result = await pool.query(toPg(sql), params);
+        return result.rows[0] || null;
+    },
+    all: async (sql, params = []) => {
+        const result = await pool.query(toPg(sql), params);
+        return result.rows;
+    },
+    run: async (sql, params = []) => {
+        let query = toPg(sql);
+        // Ajoute RETURNING id aux INSERT pour récupérer l'ID créé
+        if (sql.trim().toUpperCase().startsWith('INSERT') && !query.toUpperCase().includes('RETURNING')) {
+            query += ' RETURNING id';
+        }
+        const result = await pool.query(query, params);
+        return {
+            changes: result.rowCount,
+            lastID:  result.rows[0]?.id,
+        };
+    }
+};
+
+async function getDb() {
+    return db;
+}
+
+async function initDb() {
+    await pool.query(`
+        CREATE TABLE IF NOT EXISTS users (
+            id            SERIAL PRIMARY KEY,
+            email         TEXT UNIQUE NOT NULL,
+            password_hash TEXT NOT NULL,
+            created_at    TIMESTAMPTZ DEFAULT NOW()
+        )
+    `);
+    console.log('✅ Table users PostgreSQL prête');
+}
+
+module.exports = { getDb, initDb };
