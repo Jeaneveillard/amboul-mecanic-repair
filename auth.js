@@ -1,7 +1,22 @@
 // ===== Constantes localStorage =====
-const AUTH_TOKEN_KEY  = 'amboul_jwt';
-const AUTH_USER_KEY   = 'amboul_user';
-const BACKEND_URL_KEY = 'amboul_backend_url';
+const AUTH_TOKEN_KEY    = 'amboul_jwt';
+const AUTH_USER_KEY     = 'amboul_user';
+const BACKEND_URL_KEY   = 'amboul_backend_url';
+const LAST_ACTIVITY_KEY = 'amboul_last_activity';
+
+// Délai d'inactivité avant déconnexion automatique (30 minutes)
+const IDLE_TIMEOUT_MS = 30 * 60 * 1000;
+
+function updateLastActivity() {
+    localStorage.setItem(LAST_ACTIVITY_KEY, Date.now().toString());
+}
+
+function isIdleExpired() {
+    if (!isLoggedIn()) return false;
+    const last = parseInt(localStorage.getItem(LAST_ACTIVITY_KEY) || '0');
+    if (!last) return false;
+    return Date.now() - last > IDLE_TIMEOUT_MS;
+}
 
 // Email de l'administrateur (correspond à ADMIN_EMAIL dans backend/.env)
 const ADMIN_EMAIL = 'jeaneveillard@gmail.com';

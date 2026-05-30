@@ -36,10 +36,25 @@ document.addEventListener('DOMContentLoaded', () => {
         btn.classList.toggle('active', btn.dataset.lang === getLang());
     });
 
-    // ===== Initialisation Auth =====
-    if (!isLoggedIn() && getBackendUrl()) {
+    // ===== Initialisation Auth + contrôle d'inactivité =====
+
+    // Déconnexion si inactif depuis plus de 30 min
+    if (isLoggedIn() && isIdleExpired()) {
+        logout();
+    } else if (!isLoggedIn() && getBackendUrl()) {
         showAuthOverlay();
     }
+
+    // Mettre à jour l'horodatage à chaque interaction
+    updateLastActivity();
+    ['click', 'keydown', 'touchstart', 'mousemove'].forEach(evt =>
+        document.addEventListener(evt, updateLastActivity, { passive: true })
+    );
+
+    // Vérifier l'inactivité toutes les 2 minutes
+    setInterval(() => {
+        if (isLoggedIn() && isIdleExpired()) logout();
+    }, 2 * 60 * 1000);
 
     // Afficher l'onglet Admin si connecté en tant qu'admin
     if (isAdmin() && getBackendUrl()) {
@@ -77,6 +92,7 @@ document.addEventListener('DOMContentLoaded', () => {
         authSubmitBtn.disabled = true;
         try {
             await login(email, password);
+            updateLastActivity();
             hideAuthOverlay();
             if (isAdmin() && getBackendUrl()) {
                 document.getElementById('adminNavBtn')?.classList.remove('hidden');
