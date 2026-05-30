@@ -5,6 +5,8 @@ const rateLimit = require('express-rate-limit');
 
 const authRoutes = require('./routes/auth');
 const diagnoseRoutes = require('./routes/diagnose');
+const adminRoutes = require('./routes/admin');
+const { requireAuth } = require('./middleware/auth');
 
 const app = express();
 
@@ -19,7 +21,7 @@ app.use(cors({
         if (!origin || allowedOrigins.includes(origin)) return cb(null, true);
         cb(new Error('CORS non autorisé pour cette origine'));
     },
-    methods: ['GET', 'POST'],
+    methods: ['GET', 'POST', 'DELETE'],
     allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
@@ -48,6 +50,7 @@ app.get('/api/health', (req, res) => {
 });
 
 app.use('/api/auth', authRoutes);
+app.use('/api/admin', requireAuth, adminRoutes);
 app.use('/api/diagnose', diagnoseLimit, diagnoseRoutes);
 
 // 404
