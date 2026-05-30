@@ -56,6 +56,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
     authFreeBtn?.addEventListener('click', () => hideAuthOverlay());
 
+    // Bouton œil — voir/masquer le mot de passe
+    document.getElementById('toggleAuthPassword')?.addEventListener('click', () => {
+        const pwdInput = document.getElementById('authPassword');
+        const eyeBtn   = document.getElementById('toggleAuthPassword');
+        if (!pwdInput) return;
+        const isVisible = pwdInput.type === 'text';
+        pwdInput.type  = isVisible ? 'password' : 'text';
+        eyeBtn.textContent = isVisible ? '👁' : '🙈';
+    });
+
     authForm?.addEventListener('submit', async (e) => {
         e.preventDefault();
         authError.classList.add('hidden');
