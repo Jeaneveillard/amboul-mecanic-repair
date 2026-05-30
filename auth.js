@@ -6,7 +6,7 @@ const BACKEND_URL_KEY = 'amboul_backend_url';
 // ===== Getters =====
 function getToken()      { return localStorage.getItem(AUTH_TOKEN_KEY); }
 function getUser()       { return localStorage.getItem(AUTH_USER_KEY); }
-function getBackendUrl() { return localStorage.getItem(BACKEND_URL_KEY) || ''; }
+function getBackendUrl() { return localStorage.getItem(BACKEND_URL_KEY) || 'https://amboul-mecanic-repair-production.up.railway.app'; }
 function isLoggedIn()    { return !!getToken(); }
 
 // ===== Sauvegarde après login/register =====
