@@ -21,9 +21,18 @@ document.addEventListener('DOMContentLoaded', () => {
     const diagPanelContent = document.getElementById('diagPanelContent');
 
     // ===== Initialisation langue =====
+    // Paramètres du dernier diagnostic — pour relancer quand la langue change
+    let lastDiagnosisParams = null;
+
     applyTranslations();
     document.querySelectorAll('.lang-btn').forEach(btn => {
-        btn.addEventListener('click', () => setLang(btn.dataset.lang));
+        btn.addEventListener('click', async () => {
+            setLang(btn.dataset.lang);
+            // Si un diagnostic est déjà affiché, le relancer dans la nouvelle langue
+            if (lastDiagnosisParams) {
+                await runDiagnosis(lastDiagnosisParams);
+            }
+        });
         btn.classList.toggle('active', btn.dataset.lang === getLang());
     });
 
@@ -886,18 +895,8 @@ document.addEventListener('DOMContentLoaded', () => {
         window.print();
     });
 
-    // ===== Form Submit =====
-    form.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        clearFormError();
-
-        const provider = localStorage.getItem('ai_provider') || 'pollinations';
-
-        const make = document.getElementById('carMake').value.trim();
-        const model = document.getElementById('carModel').value.trim();
-        const year = document.getElementById('carYear').value;
-        const symptom = document.getElementById('carSymptom').value.trim();
-
+    // ===== Moteur de diagnostic (réutilisé par form + changement de langue) =====
+    async function runDiagnosis({ make, model, year, symptom, provider }) {
         setLoading(true);
         resultContainer.innerHTML = '';
         resultContainer.classList.remove('empty');
@@ -919,6 +918,7 @@ document.addEventListener('DOMContentLoaded', () => {
             diagPanelContent.innerHTML = buildPartsDiagram(parts, make, model, year);
 
             saveToHistory({ make, model, year, symptom, provider, result: textResponse });
+            lastDiagnosisParams = { make, model, year, symptom, provider };
             printBtn.classList.remove('hidden');
 
         } catch (error) {
@@ -942,5 +942,19 @@ document.addEventListener('DOMContentLoaded', () => {
         } finally {
             setLoading(false);
         }
+    }
+
+    // ===== Form Submit =====
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        clearFormError();
+
+        const provider = localStorage.getItem('ai_provider') || 'pollinations';
+        const make     = document.getElementById('carMake').value.trim();
+        const model    = document.getElementById('carModel').value.trim();
+        const year     = document.getElementById('carYear').value;
+        const symptom  = document.getElementById('carSymptom').value.trim();
+
+        await runDiagnosis({ make, model, year, symptom, provider });
     });
 });
