@@ -345,6 +345,7 @@ document.addEventListener('DOMContentLoaded', () => {
     settingsModal.addEventListener('click', (e) => { if (e.target === settingsModal) closeModal(); });
 
     saveSettingsBtn.addEventListener('click', () => {
+        if (!isAdmin()) return; // sécurité — mécaniciens ne peuvent pas modifier les paramètres
         const backendUrlInput = document.getElementById('backendUrlInput');
         if (backendUrlInput) {
             localStorage.setItem('amboul_backend_url', backendUrlInput.value.trim());

@@ -12,6 +12,10 @@ if (!process.env.ADMIN_EMAIL) {
     console.error('❌ ADMIN_EMAIL manquant — arrêt du serveur.');
     process.exit(1);
 }
+if (!process.env.DATABASE_URL) {
+    console.error('❌ DATABASE_URL manquant — arrêt du serveur.');
+    process.exit(1);
+}
 
 const authRoutes = require('./routes/auth');
 const diagnoseRoutes = require('./routes/diagnose');
@@ -82,6 +86,10 @@ const PORT = process.env.PORT || 3000;
 // Création automatique du compte admin au démarrage si inexistant
 async function seedAdminIfNeeded() {
     if (!process.env.ADMIN_EMAIL || !process.env.ADMIN_INITIAL_PASSWORD) return;
+    if (process.env.ADMIN_INITIAL_PASSWORD.length < 8) {
+        console.warn('⚠️ ADMIN_INITIAL_PASSWORD trop court (< 8 chars) — skip création admin');
+        return;
+    }
     try {
         const { getDb } = require('./db');
         const bcrypt = require('bcryptjs');
