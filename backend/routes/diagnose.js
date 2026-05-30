@@ -30,8 +30,15 @@ router.post('/',
             return res.status(400).json({ error: errors.array()[0].msg });
         }
 
-        const { make, model, year, symptom, provider } = req.body;
-        const userPrompt = `Véhicule: ${make} ${model} (Année: ${year})\nSymptômes/Codes: ${symptom}\nVeuillez analyser et fournir un diagnostic selon vos instructions systémiques.`;
+        const { make, model, year, symptom, provider, lang = 'fr' } = req.body;
+        const langInstructions = {
+            fr: '',
+            en: 'Respond ONLY in English.',
+            es: 'Responde ÚNICAMENTE en español.',
+            ht: 'Reponn SÈLMAN ann kreyòl ayisyen.'
+        };
+        const langInstruction = langInstructions[lang] || '';
+        const userPrompt = `Véhicule: ${make} ${model} (Année: ${year})\nSymptômes/Codes: ${symptom}\nVeuillez analyser et fournir un diagnostic selon vos instructions systémiques.${langInstruction ? '\n' + langInstruction : ''}`;
 
         try {
             let result = '';

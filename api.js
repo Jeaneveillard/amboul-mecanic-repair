@@ -36,7 +36,7 @@ async function callDiagnose({ make, model, year, symptom, provider }) {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${getToken()}`
         },
-        body: JSON.stringify({ make, model, year, symptom, provider })
+        body: JSON.stringify({ make, model, year, symptom, provider, lang: typeof getLang === 'function' ? getLang() : 'fr' })
     });
 
     if (resp.status === 401) {
@@ -55,7 +55,8 @@ async function callDiagnose({ make, model, year, symptom, provider }) {
 
 // Fallback Pollinations direct (pas de backend configuré)
 async function callPollinationsDirect({ make, model, year, symptom }) {
-    const userPrompt = `Véhicule: ${make} ${model} (Année: ${year})\nSymptômes/Codes: ${symptom}\nVeuillez analyser et fournir un diagnostic selon vos instructions systémiques.`;
+    const langInstruction = typeof t === 'function' ? t('ai.lang_instruction') : '';
+    const userPrompt = `Véhicule: ${make} ${model} (Année: ${year})\nSymptômes/Codes: ${symptom}\nVeuillez analyser et fournir un diagnostic selon vos instructions systémiques.${langInstruction ? '\n' + langInstruction : ''}`;
     const resp = await fetch('https://text.pollinations.ai/openai', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

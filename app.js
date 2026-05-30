@@ -20,6 +20,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const vehicleSideBadge = document.getElementById('vehicleSideBadge');
     const diagPanelContent = document.getElementById('diagPanelContent');
 
+    // ===== Initialisation langue =====
+    applyTranslations();
+    document.querySelectorAll('.lang-btn').forEach(btn => {
+        btn.addEventListener('click', () => setLang(btn.dataset.lang));
+        btn.classList.toggle('active', btn.dataset.lang === getLang());
+    });
+
     // ===== Initialisation Auth =====
     if (!isLoggedIn() && getBackendUrl()) {
         showAuthOverlay();
@@ -277,8 +284,9 @@ document.addEventListener('DOMContentLoaded', () => {
         localStorage.setItem('ai_provider', aiProviderSelect.value);
         localStorage.setItem('custom_model', customModelInput.value.trim());
         closeModal();
-        saveSettingsBtn.textContent = '✅ Sauvegardé !';
-        setTimeout(() => { saveSettingsBtn.textContent = 'Sauvegarder'; }, 2000);
+        const savedMsgs = { fr: '✅ Sauvegardé !', en: '✅ Saved!', es: '✅ Guardado!', ht: '✅ Sovgade!' };
+        saveSettingsBtn.textContent = savedMsgs[getLang()] || '✅ Sauvegardé !';
+        setTimeout(() => { saveSettingsBtn.textContent = t('settings.save'); }, 2000);
     });
 
     document.getElementById('logoutBtn')?.addEventListener('click', () => {
@@ -300,16 +308,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // ===== OBD2 Functions =====
     function graviteLabel(g) {
-        return { 1: 'Info', 2: 'Attention', 3: 'Critique' }[g] || 'Info';
+        return { 1: t('severity.info'), 2: t('severity.warning'), 3: t('severity.critical') }[g] || t('severity.info');
     }
 
     function renderOBD2Cards(codes) {
         if (codes.length === 0) {
-            obd2ResultsDiv.innerHTML = '<p class="obd2-empty">Aucun code trouvé pour cette recherche.</p>';
+            obd2ResultsDiv.innerHTML = `<p class="obd2-empty">${t('obd2.empty')}</p>`;
             return;
         }
         obd2ResultsDiv.innerHTML = codes.map(entry => `
-            <div class="obd2-card" title="Cliquer pour utiliser dans le diagnostic" onclick="useOBD2Code('${entry.code}')">
+            <div class="obd2-card" title="${t('obd2.click_hint')}" onclick="useOBD2Code('${entry.code}')">
                 <div class="obd2-card-header">
                     <span class="obd2-code">${entry.code}</span>
                     <span class="obd2-badge badge-${entry.gravite}">${graviteLabel(entry.gravite)}</span>
@@ -369,7 +377,7 @@ document.addEventListener('DOMContentLoaded', () => {
         history.forEach(e => historyMap.set(e.id, e));
 
         if (history.length === 0) {
-            historiqueList.innerHTML = '<p class="historique-empty">Aucun diagnostic sauvegardé.</p>';
+            historiqueList.innerHTML = `<p class="historique-empty">${t('history.empty')}</p>`;
             return;
         }
         historiqueList.innerHTML = history.map(entry => `
@@ -385,8 +393,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     </div>
                 </div>
                 <div class="historique-actions">
-                    <button type="button" class="btn secondary-btn" onclick="reloadFromHistory(${entry.id})">↩️ Recharger</button>
-                    <button type="button" class="btn danger-btn" onclick="deleteHistoryEntry(${entry.id})">🗑️ Supprimer</button>
+                    <button type="button" class="btn secondary-btn" onclick="reloadFromHistory(${entry.id})">${t('history.reload')}</button>
+                    <button type="button" class="btn danger-btn" onclick="deleteHistoryEntry(${entry.id})">${t('history.delete')}</button>
                 </div>
             </div>
         `).join('');
@@ -406,7 +414,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     clearHistoryBtn.addEventListener('click', () => {
-        if (confirm('Effacer tout l\'historique ?')) {
+        if (confirm(t('history.confirm_clear'))) {
             localStorage.removeItem(HISTORY_KEY);
             renderHistorique();
         }
@@ -791,7 +799,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (parts.length === 0) {
             return `<div class="parts-panel-empty">
                 <span class="empty-icon diag-empty-icon">🔍</span>
-                <p>Lancez un diagnostic pour voir les pièces en cause</p>
+                <p>${t('diag.parts_empty')}</p>
             </div>`;
         }
 
@@ -813,7 +821,7 @@ document.addEventListener('DOMContentLoaded', () => {
         setTimeout(() => loadPartImages(parts, make, model, year), 30);
 
         return `<div class="parts-panel">
-            <div class="parts-panel-title">🔧 Pièces en cause — ${make} ${model} ${year}</div>
+            <div class="parts-panel-title">${t('diag.parts_title')} — ${make} ${model} ${year}</div>
             <div class="parts-cards">${cards}</div>
         </div>`;
     }
@@ -827,7 +835,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (theadRow && !theadRow.querySelector('.check-th')) {
                 const th = document.createElement('th');
                 th.className = 'check-th';
-                th.textContent = 'État';
+                th.textContent = t('check.header');
                 theadRow.insertBefore(th, theadRow.firstChild);
             }
 
@@ -841,14 +849,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 const btn = document.createElement('button');
                 btn.type = 'button';
                 btn.className = 'check-btn';
-                btn.title = 'Marquer comme normal';
+                btn.title = t('check.normal');
                 btn.setAttribute('aria-pressed', 'false');
                 btn.innerHTML = `<span class="check-icon unchecked">○</span>`;
 
                 btn.addEventListener('click', () => {
                     const isNormal = row.classList.toggle('symptom-normal');
                     btn.setAttribute('aria-pressed', String(isNormal));
-                    btn.title = isNormal ? 'Normal ✓ — cliquer pour annuler' : 'Marquer comme normal';
+                    btn.title = isNormal ? t('check.verified') : t('check.normal');
                     btn.innerHTML = isNormal
                         ? `<span class="check-icon checked">✓</span>`
                         : `<span class="check-icon unchecked">○</span>`;
@@ -916,12 +924,12 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (error) {
             console.error('API Error:', error);
             let userMessage = error.message;
-            if (error.message.includes('401') || error.message.toLowerCase().includes('session expirée')) {
-                userMessage = 'Session expirée. Reconnectez-vous.';
+            if (error.message.includes('401') || error.message.toLowerCase().includes('session')) {
+                userMessage = t('error.session');
             } else if (error.message.includes('429') || error.message.toLowerCase().includes('quota')) {
-                userMessage = 'Quota API dépassé. Réessayez dans quelques minutes.';
+                userMessage = t('error.quota');
             } else if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
-                userMessage = 'Erreur réseau. Vérifiez votre connexion internet.';
+                userMessage = t('error.network');
             }
             resultContainer.innerHTML = `
                 <div class="empty-state">
