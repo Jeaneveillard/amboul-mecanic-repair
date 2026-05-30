@@ -94,6 +94,40 @@ body {
     background: rgba(255, 255, 255, 0.05);
 }
 
+/* Sélecteur de langue */
+.lang-switcher {
+    display: flex;
+    gap: 0.15rem;
+    align-items: center;
+}
+
+.lang-btn {
+    background: transparent;
+    border: 1px solid transparent;
+    color: var(--text-muted);
+    font-size: 0.72rem;
+    font-weight: 700;
+    font-family: var(--font-sans);
+    cursor: pointer;
+    padding: 0.25rem 0.45rem;
+    border-radius: 5px;
+    letter-spacing: 0.03em;
+    transition: var(--transition);
+    min-height: unset;
+}
+
+.lang-btn:hover {
+    color: var(--text-main);
+    background: rgba(255, 255, 255, 0.06);
+    border-color: var(--glass-border);
+}
+
+.lang-btn.active {
+    color: var(--primary-color);
+    background: rgba(59, 130, 246, 0.12);
+    border-color: rgba(59, 130, 246, 0.3);
+}
+
 /* Navigation header */
 .header-nav {
     display: flex;
