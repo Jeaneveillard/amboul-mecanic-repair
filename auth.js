@@ -28,7 +28,7 @@ function isAdmin() {
 // ===== Getters =====
 function getToken()      { return localStorage.getItem(AUTH_TOKEN_KEY); }
 function getUser()       { return localStorage.getItem(AUTH_USER_KEY); }
-function getBackendUrl() { return localStorage.getItem(BACKEND_URL_KEY) || 'https://amboul-mecanic-repair-production.up.railway.app'; }
+function getBackendUrl() { return localStorage.getItem(BACKEND_URL_KEY) || 'https://amboul-mecanic-repair.onrender.com'; }
 function isLoggedIn()    { return !!getToken(); }
 
 // ===== Sauvegarde après login/register =====
