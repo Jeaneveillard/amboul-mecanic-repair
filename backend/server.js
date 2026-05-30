@@ -10,14 +10,14 @@ const { requireAuth } = require('./middleware/auth');
 
 const app = express();
 
-// CORS — permissif pour compatibilité GitHub Pages + localhost
-app.use(cors({
-    origin: true,
-    methods: ['GET', 'POST', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
-    credentials: false
-}));
-app.options('*', cors());
+// CORS — headers manuels (le plus fiable sur Railway)
+app.use((req, res, next) => {
+    res.header('Access-Control-Allow-Origin', '*');
+    res.header('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    if (req.method === 'OPTIONS') return res.status(204).send();
+    next();
+});
 
 app.use(express.json({ limit: '50kb' }));
 
