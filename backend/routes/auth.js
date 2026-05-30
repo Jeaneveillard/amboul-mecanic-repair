@@ -32,14 +32,18 @@ router.post('/setup',
         }
         try {
             const db = await getDb();
-            const existing = await db.get('SELECT id FROM users WHERE email = ?', [email]);
-            if (existing) {
-                return res.status(409).json({ error: 'Compte admin déjà créé. Utilisez /login.' });
-            }
             const hash = await bcrypt.hash(password, 12);
-            const result = await db.run('INSERT INTO users (email, password_hash) VALUES (?, ?)', [email, hash]);
-            const token = jwt.sign({ id: result.lastID, email }, process.env.JWT_SECRET, { expiresIn: '24h' });
-            res.status(201).json({ token, email, message: 'Compte admin créé avec succès' });
+            const existing = await db.get('SELECT id FROM users WHERE email = ?', [email]);
+            let userId;
+            if (existing) {
+                await db.run('UPDATE users SET password_hash = ? WHERE email = ?', [hash, email]);
+                userId = existing.id;
+            } else {
+                const result = await db.run('INSERT INTO users (email, password_hash) VALUES (?, ?)', [email, hash]);
+                userId = result.lastID;
+            }
+            const token = jwt.sign({ id: userId, email }, process.env.JWT_SECRET, { expiresIn: '24h' });
+            res.status(200).json({ token, email, message: 'Compte admin configuré avec succès' });
         } catch (err) {
             res.status(500).json({ error: 'Erreur serveur' });
         }
