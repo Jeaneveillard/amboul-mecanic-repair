@@ -37,23 +37,37 @@ router.post('/',
             let result = '';
 
             if (provider === 'pollinations') {
-                // Endpoint OpenAI-compatible de Pollinations.ai
-                const resp = await fetch('https://text.pollinations.ai/openai', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        messages: [
-                            { role: 'system', content: SYSTEM_PROMPT },
-                            { role: 'user', content: userPrompt }
-                        ],
-                        model: 'openai-large',
-                        private: true,
-                        seed: -1
-                    })
-                });
-                if (!resp.ok) throw new Error(`Pollinations: ${resp.statusText}`);
-                const data = await resp.json();
-                result = data.choices?.[0]?.message?.content || await resp.text();
+                // Endpoint GET simplifié (le plus fiable en 2026)
+                const combinedPrompt = `[SYSTÈME: ${SYSTEM_PROMPT.substring(0, 300)}]\n\n${userPrompt}`;
+                const getUrl = `https://text.pollinations.ai/${encodeURIComponent(combinedPrompt)}?model=openai&private=true`;
+                let polResp = await fetch(getUrl);
+
+                if (polResp.ok) {
+                    result = await polResp.text();
+                }
+
+                // Fallback POST standard
+                if (!result) {
+                    polResp = await fetch('https://text.pollinations.ai/', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            messages: [
+                                { role: 'user', content: `${SYSTEM_PROMPT}\n\n${userPrompt}` }
+                            ],
+                            model: 'openai',
+                            private: true,
+                            seed: 42
+                        })
+                    });
+                    if (!polResp.ok) {
+                        const errText = await polResp.text().catch(() => polResp.statusText);
+                        throw new Error(`[Pollinations] ${polResp.status}: ${errText.substring(0, 100)}`);
+                    }
+                    result = await polResp.text();
+                }
+
+                if (!result) throw new Error('[Pollinations] Réponse vide — service peut-être indisponible');
 
             } else if (provider === 'gemini') {
                 const key = process.env.GEMINI_API_KEY;
