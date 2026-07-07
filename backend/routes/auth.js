@@ -20,7 +20,10 @@ router.post('/register', (req, res) => {
     res.status(403).json({ error: 'L\'inscription publique est désactivée. Contactez l\'administrateur.' });
 });
 
-// POST /api/auth/setup — crée le compte admin si inexistant (protégé par ADMIN_EMAIL)
+// POST /api/auth/setup — crée le compte admin UNIQUEMENT s'il n'existe pas encore.
+// Si le compte existe déjà, la route refuse : sinon n'importe qui connaissant
+// l'email admin (visible dans le code frontend) pourrait réinitialiser le mot de passe.
+// Pour changer le mot de passe admin : script backend/reset-password.js.
 router.post('/setup',
     body('email').isEmail().normalizeEmail(),
     body('password').isLength({ min: 8 }),
@@ -32,17 +35,13 @@ router.post('/setup',
         }
         try {
             const db = await getDb();
-            const hash = await bcrypt.hash(password, 12);
             const existing = await db.get('SELECT id FROM users WHERE email = ?', [email]);
-            let userId;
             if (existing) {
-                await db.run('UPDATE users SET password_hash = ? WHERE email = ?', [hash, email]);
-                userId = existing.id;
-            } else {
-                const result = await db.run('INSERT INTO users (email, password_hash) VALUES (?, ?)', [email, hash]);
-                userId = result.lastID;
+                return res.status(403).json({ error: 'Compte admin déjà configuré. Utilisez reset-password.js sur le serveur pour changer le mot de passe.' });
             }
-            const token = jwt.sign({ id: userId, email }, process.env.JWT_SECRET, { expiresIn: '24h' });
+            const hash = await bcrypt.hash(password, 12);
+            const result = await db.run('INSERT INTO users (email, password_hash) VALUES (?, ?)', [email, hash]);
+            const token = jwt.sign({ id: result.lastID, email }, process.env.JWT_SECRET, { expiresIn: '24h' });
             res.status(200).json({ token, email, message: 'Compte admin configuré avec succès' });
         } catch (err) {
             res.status(500).json({ error: 'Erreur serveur' });

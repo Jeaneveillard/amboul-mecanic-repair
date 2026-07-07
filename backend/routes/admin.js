@@ -85,7 +85,7 @@ router.patch('/users/:id/password',
             const user = await db.get('SELECT id, email FROM users WHERE id = ?', [req.params.id]);
             if (!user) return res.status(404).json({ error: 'Utilisateur introuvable' });
             if (user.email === process.env.ADMIN_EMAIL) {
-                return res.status(400).json({ error: 'Utilisez /setup pour changer le mot de passe admin' });
+                return res.status(400).json({ error: 'Le mot de passe admin se change via reset-password.js sur le serveur' });
             }
             const hash = await bcrypt.hash(req.body.password, 12);
             await db.run('UPDATE users SET password_hash = ? WHERE id = ?', [hash, req.params.id]);

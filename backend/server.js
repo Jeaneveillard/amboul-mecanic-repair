@@ -25,9 +25,27 @@ const { initDb } = require('./db');
 
 const app = express();
 
-// CORS — headers manuels (le plus fiable sur Railway)
+// Derrière le proxy Render/Railway : sans ceci, express-rate-limit voit
+// l'IP du proxy pour tout le monde (limite partagée entre tous les utilisateurs).
+app.set('trust proxy', 1);
+
+// CORS — headers manuels (le plus fiable sur Render/Railway).
+// ALLOWED_ORIGINS (liste séparée par virgules, ex: "https://jeaneveillard.github.io")
+// restreint l'accès aux origines listées. Non définie → ouvert à tous (*)
+// pour ne pas casser un déploiement existant.
+const allowedOrigins = (process.env.ALLOWED_ORIGINS || '')
+    .split(',')
+    .map(s => s.trim().replace(/\/$/, ''))
+    .filter(Boolean);
+
 app.use((req, res, next) => {
-    res.header('Access-Control-Allow-Origin', '*');
+    const origin = req.headers.origin;
+    if (allowedOrigins.length === 0) {
+        res.header('Access-Control-Allow-Origin', '*');
+    } else if (origin && allowedOrigins.includes(origin.replace(/\/$/, ''))) {
+        res.header('Access-Control-Allow-Origin', origin);
+        res.header('Vary', 'Origin');
+    }
     res.header('Access-Control-Allow-Methods', 'GET, POST, DELETE, PATCH, OPTIONS');
     res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
     if (req.method === 'OPTIONS') return res.status(204).send();
@@ -63,6 +81,15 @@ const setupLimit = rateLimit({
     message: { error: 'Trop de tentatives de configuration.' }
 });
 
+// Rate limiting strict pour le mode sans compte (5/min — route publique)
+const freeLimit = rateLimit({
+    windowMs: 60 * 1000,
+    max: 5,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: 'Limite du mode gratuit atteinte (5/minute). Réessayez dans une minute.' }
+});
+
 app.get('/api/health', (req, res) => {
     res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
@@ -70,6 +97,7 @@ app.get('/api/health', (req, res) => {
 app.use('/api/auth/setup', setupLimit);
 app.use('/api/auth', authRoutes);
 app.use('/api/admin', requireAuth, adminRoutes);
+app.use('/api/diagnose/free', freeLimit);
 app.use('/api/diagnose', diagnoseLimit, diagnoseRoutes);
 
 // 404
@@ -105,8 +133,15 @@ async function seedAdminIfNeeded() {
     }
 }
 
-app.listen(PORT, async () => {
-    console.log(`✅ Amboul backend démarré sur le port ${PORT}`);
-    await initDb();          // Crée la table si elle n'existe pas
-    await seedAdminIfNeeded(); // Crée le compte admin si absent
-});
+// DB prête AVANT d'accepter des requêtes (évite les 500 au premier déploiement)
+initDb()
+    .then(seedAdminIfNeeded)
+    .then(() => {
+        app.listen(PORT, () => {
+            console.log(`✅ Amboul backend démarré sur le port ${PORT}`);
+        });
+    })
+    .catch((err) => {
+        console.error('❌ Échec initialisation base de données :', err.message);
+        process.exit(1);
+    });

@@ -39,16 +39,27 @@ document.addEventListener('DOMContentLoaded', () => {
     // ===== Initialisation Auth + contrôle d'inactivité =====
 
     // Déconnexion si inactif depuis plus de 30 min
+    // Le choix « Continuer sans compte » est mémorisé pour la session (onglet)
+    const inFreeMode = () => sessionStorage.getItem('amboul_free_mode') === '1';
     if (isLoggedIn() && isIdleExpired()) {
         logout();
-    } else if (!isLoggedIn() && getBackendUrl()) {
+    } else if (!isLoggedIn() && getBackendUrl() && !inFreeMode()) {
         showAuthOverlay();
     }
 
     // Mettre à jour l'horodatage à chaque interaction
+    // (throttlé : mousemove déclencherait sinon une écriture localStorage par pixel)
     updateLastActivity();
+    let lastActivityWrite = Date.now();
+    const trackActivity = () => {
+        const now = Date.now();
+        if (now - lastActivityWrite > 30 * 1000) {
+            lastActivityWrite = now;
+            updateLastActivity();
+        }
+    };
     ['click', 'keydown', 'touchstart', 'mousemove'].forEach(evt =>
-        document.addEventListener(evt, updateLastActivity, { passive: true })
+        document.addEventListener(evt, trackActivity, { passive: true })
     );
 
     // Vérifier l'inactivité toutes les 2 minutes
@@ -70,7 +81,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const authSubmitBtn  = document.getElementById('authSubmitBtn');
     const authFreeBtn    = document.getElementById('authFreeBtn');
 
-    authFreeBtn?.addEventListener('click', () => hideAuthOverlay());
+    authFreeBtn?.addEventListener('click', () => {
+        sessionStorage.setItem('amboul_free_mode', '1');
+        hideAuthOverlay();
+    });
 
     // Bouton œil — voir/masquer le mot de passe
     document.getElementById('toggleAuthPassword')?.addEventListener('click', () => {
@@ -472,8 +486,20 @@ document.addEventListener('DOMContentLoaded', () => {
     window.reloadFromHistory = function(id) {
         const entry = historyMap.get(id);
         if (!entry) return;
+        // Restaurer tout le formulaire (pas seulement les symptômes)
+        carMakeSelect.value = entry.make;
+        carMakeSelect.dispatchEvent(new Event('change')); // repeuple les modèles
+        carModelSelect.value = entry.model;
+        yearSelect.value = entry.year;
         document.getElementById('carSymptom').value = entry.symptom;
         showSection('diagnostic');
+        if (entry.make && entry.model && entry.year) {
+            updateVehiclePhoto(entry.make, entry.model, entry.year);
+        }
+        // Réafficher le diagnostic sauvegardé sans nouvel appel API
+        if (entry.result) {
+            displayResult(entry.result, entry);
+        }
     };
 
     window.deleteHistoryEntry = function(id) {
@@ -950,10 +976,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // ===== Print Button =====
     printBtn.addEventListener('click', () => {
-        const make = document.getElementById('carMake').value;
-        const model = document.getElementById('carModel').value;
-        const year = document.getElementById('carYear').value;
-        const symptom = document.getElementById('carSymptom').value;
+        // Utiliser les paramètres du diagnostic affiché (pas le formulaire,
+        // que l'utilisateur a pu modifier depuis)
+        const { make, model, year, symptom } = lastDiagnosisParams || {
+            make: document.getElementById('carMake').value,
+            model: document.getElementById('carModel').value,
+            year: document.getElementById('carYear').value,
+            symptom: document.getElementById('carSymptom').value
+        };
         printZone.innerHTML = `
             <h1>🔧 Amboul Mecanic Repair</h1>
             <p style="color:#555; margin-bottom:1rem;">Rapport de diagnostic — ${new Date().toLocaleString('fr-CA')}</p>
@@ -966,6 +996,25 @@ document.addEventListener('DOMContentLoaded', () => {
         window.print();
     });
 
+    // ===== Affichage d'un diagnostic (nouveau ou rechargé depuis l'historique) =====
+    function displayResult(textResponse, { make, model, year, symptom, provider }) {
+        const rawHtml = typeof window.marked !== 'undefined'
+            ? window.marked.parse(textResponse)
+            : `<pre style="white-space:pre-wrap;font-family:inherit;">${textResponse}</pre>`;
+        const parsedHtml = typeof window.DOMPurify !== 'undefined'
+            ? window.DOMPurify.sanitize(rawHtml, { USE_PROFILES: { html: true } })
+            : rawHtml;
+
+        resultContainer.classList.remove('empty');
+        resultContainer.innerHTML = parsedHtml;
+        addSymptomChecks();
+        const parts = detectParts(symptom, textResponse);
+        diagPanelContent.innerHTML = buildPartsDiagram(parts, make, model, year);
+
+        lastDiagnosisParams = { make, model, year, symptom, provider };
+        printBtn.classList.remove('hidden');
+    }
+
     // ===== Moteur de diagnostic (réutilisé par form + changement de langue) =====
     async function runDiagnosis({ make, model, year, symptom, provider }) {
         setLoading(true);
@@ -975,22 +1024,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         try {
             const textResponse = await callDiagnose({ make, model, year, symptom, provider });
-
-            const rawHtml = typeof window.marked !== 'undefined'
-                ? window.marked.parse(textResponse)
-                : `<pre style="white-space:pre-wrap;font-family:inherit;">${textResponse}</pre>`;
-            const parsedHtml = typeof window.DOMPurify !== 'undefined'
-                ? window.DOMPurify.sanitize(rawHtml, { USE_PROFILES: { html: true } })
-                : rawHtml;
-
-            resultContainer.innerHTML = parsedHtml;
-            addSymptomChecks();
-            const parts = detectParts(symptom, textResponse);
-            diagPanelContent.innerHTML = buildPartsDiagram(parts, make, model, year);
-
+            displayResult(textResponse, { make, model, year, symptom, provider });
             saveToHistory({ make, model, year, symptom, provider, result: textResponse });
-            lastDiagnosisParams = { make, model, year, symptom, provider };
-            printBtn.classList.remove('hidden');
 
         } catch (error) {
             console.error('API Error:', error);
@@ -1048,13 +1083,21 @@ document.addEventListener('DOMContentLoaded', () => {
                     </div>
                     <div class="admin-user-actions">
                         <button type="button" class="btn secondary-btn admin-pwd-btn"
-                            onclick="adminChangePassword(${u.id}, '${escHtml(u.email)}')">
+                            onclick="adminChangePassword(${u.id})">
                             🔑 Nouveau MDP
                         </button>
                         <button type="button" class="btn danger-btn admin-revoke-btn"
                             onclick="adminRevoke(${u.id}, '${escHtml(u.email)}')">
                             Révoquer
                         </button>
+                    </div>
+                    <div class="admin-pwd-form hidden" id="pwdForm-${u.id}">
+                        <input type="text" id="pwdInput-${u.id}" placeholder="Nouveau mot de passe (min 8 caractères)" autocomplete="new-password">
+                        <button type="button" class="btn primary-btn admin-pwd-confirm"
+                            onclick="adminConfirmPassword(${u.id}, '${escHtml(u.email)}')">Valider</button>
+                        <button type="button" class="btn secondary-btn admin-pwd-cancel"
+                            onclick="adminChangePassword(${u.id})">Annuler</button>
+                        <div class="error-inline hidden admin-pwd-err" id="pwdErr-${u.id}"></div>
                     </div>
                 </div>
             `).join('');
@@ -1063,10 +1106,62 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    window.adminChangePassword = async function(id, email) {
-        const newPwd = prompt(`Nouveau mot de passe pour ${email} :\n(minimum 8 caractères)`);
-        if (!newPwd) return;
-        if (newPwd.length < 8) { alert('Minimum 8 caractères.'); return; }
+    // Mot de passe masqué dans les messages de succès — visible via 👁, copiable via 📋.
+    // encodeURIComponent rend la valeur sûre dans un attribut data-*.
+    function maskedPwdHtml(pwd) {
+        return `<span class="pwd-masked" data-pwd="${encodeURIComponent(pwd)}">••••••••</span>
+            <button type="button" class="btn-mini" onclick="revealAdminPwd(this)" title="Voir/masquer">👁</button>
+            <button type="button" class="btn-mini" onclick="copyAdminPwd(this)" title="Copier le mot de passe">📋 Copier</button>`;
+    }
+
+    window.revealAdminPwd = function(btn) {
+        const span = btn.parentElement.querySelector('.pwd-masked');
+        if (!span) return;
+        const shown = span.dataset.shown === '1';
+        span.textContent = shown ? '••••••••' : decodeURIComponent(span.dataset.pwd);
+        span.dataset.shown = shown ? '0' : '1';
+        btn.textContent = shown ? '👁' : '🙈';
+    };
+
+    window.copyAdminPwd = async function(btn) {
+        const span = btn.parentElement.querySelector('.pwd-masked');
+        if (!span) return;
+        const pwd = decodeURIComponent(span.dataset.pwd);
+        try {
+            await navigator.clipboard.writeText(pwd);
+        } catch {
+            // Fallback contexte non sécurisé (http local)
+            const ta = document.createElement('textarea');
+            ta.value = pwd;
+            document.body.appendChild(ta);
+            ta.select();
+            document.execCommand('copy');
+            ta.remove();
+        }
+        const orig = btn.textContent;
+        btn.textContent = '✅ Copié';
+        setTimeout(() => { btn.textContent = orig; }, 2000);
+    };
+
+    // Affiche/masque le formulaire inline de changement de mot de passe
+    window.adminChangePassword = function(id) {
+        const form = document.getElementById(`pwdForm-${id}`);
+        if (!form) return;
+        form.classList.toggle('hidden');
+        if (!form.classList.contains('hidden')) {
+            document.getElementById(`pwdInput-${id}`)?.focus();
+        }
+    };
+
+    window.adminConfirmPassword = async function(id, email) {
+        const input = document.getElementById(`pwdInput-${id}`);
+        const errEl = document.getElementById(`pwdErr-${id}`);
+        const newPwd = input?.value || '';
+        const showErr = (msg) => {
+            if (errEl) { errEl.textContent = msg; errEl.classList.remove('hidden'); }
+        };
+        errEl?.classList.add('hidden');
+        if (newPwd.length < 8) { showErr('Minimum 8 caractères.'); return; }
         try {
             const resp = await fetch(`${getBackendUrl()}/api/admin/users/${encodeURIComponent(id)}/password`, {
                 method: 'PATCH',
@@ -1076,20 +1171,29 @@ document.addEventListener('DOMContentLoaded', () => {
             const data = await resp.json();
             if (resp.ok) {
                 if (adminCreateSuccess) {
-                    adminCreateSuccess.textContent = `🔑 Mot de passe changé pour ${escHtml(email)} — nouveau MDP : ${escHtml(newPwd)}`;
+                    adminCreateSuccess.innerHTML = `🔑 Mot de passe changé pour <strong>${escHtml(email)}</strong> — ${maskedPwdHtml(newPwd)}`;
                     adminCreateSuccess.classList.remove('hidden');
                     adminCreateError?.classList.add('hidden');
                 }
+                if (input) input.value = '';
+                document.getElementById(`pwdForm-${id}`)?.classList.add('hidden');
             } else {
-                alert(data.error || 'Erreur lors du changement de mot de passe');
+                showErr(data.error || 'Erreur lors du changement de mot de passe');
             }
         } catch (err) {
-            alert('Erreur réseau — réessaie.');
+            showErr('Erreur réseau — réessaie.');
         }
     };
 
     window.adminRevoke = async function(id, email) {
         if (!confirm(`Révoquer l'accès de ${email} ?\n\nCette action est irréversible.`)) return;
+        const showErr = (msg) => {
+            if (adminCreateError) {
+                adminCreateError.textContent = msg;
+                adminCreateError.classList.remove('hidden');
+                adminCreateSuccess?.classList.add('hidden');
+            }
+        };
         try {
             const resp = await fetch(`${getBackendUrl()}/api/admin/users/${encodeURIComponent(id)}`, {
                 method: 'DELETE',
@@ -1097,12 +1201,13 @@ document.addEventListener('DOMContentLoaded', () => {
             });
             const data = await resp.json();
             if (resp.ok) {
+                adminCreateError?.classList.add('hidden');
                 await loadAdminUsers();
             } else {
-                alert(data.error || 'Erreur lors de la révocation');
+                showErr(data.error || 'Erreur lors de la révocation');
             }
         } catch (err) {
-            alert('Erreur réseau — réessaie.');
+            showErr('Erreur réseau — réessaie.');
         }
     };
 
@@ -1124,27 +1229,33 @@ document.addEventListener('DOMContentLoaded', () => {
         adminCreateBtn.disabled = true;
         adminCreateBtn.textContent = '...';
 
-        const resp = await fetch(`${getBackendUrl()}/api/admin/users`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${getToken()}`
-            },
-            body: JSON.stringify({ email, password })
-        });
-        const data = await resp.json();
-        adminCreateBtn.disabled = false;
-        adminCreateBtn.textContent = origText;
+        try {
+            const resp = await fetch(`${getBackendUrl()}/api/admin/users`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${getToken()}`
+                },
+                body: JSON.stringify({ email, password })
+            });
+            const data = await resp.json();
 
-        if (resp.ok) {
-            if (adminNewEmail)    adminNewEmail.value    = '';
-            if (adminNewPassword) adminNewPassword.value = '';
-            adminCreateSuccess.innerHTML = `✅ Compte créé pour <strong>${escHtml(data.email)}</strong><br>🔑 Mot de passe : <strong style="font-size:1.1rem;letter-spacing:0.05em">${escHtml(password)}</strong><br><small>Copie ce mot de passe et donne-le au mécanicien.</small>`;
-            adminCreateSuccess.classList.remove('hidden');
-            await loadAdminUsers();
-        } else {
-            adminCreateError.textContent = data.error || 'Erreur lors de la création du compte.';
+            if (resp.ok) {
+                if (adminNewEmail)    adminNewEmail.value    = '';
+                if (adminNewPassword) adminNewPassword.value = '';
+                adminCreateSuccess.innerHTML = `✅ Compte créé pour <strong>${escHtml(data.email)}</strong><br>🔑 Mot de passe : ${maskedPwdHtml(password)}<br><small>Copie ce mot de passe et donne-le au mécanicien.</small>`;
+                adminCreateSuccess.classList.remove('hidden');
+                await loadAdminUsers();
+            } else {
+                adminCreateError.textContent = data.error || 'Erreur lors de la création du compte.';
+                adminCreateError.classList.remove('hidden');
+            }
+        } catch (err) {
+            adminCreateError.textContent = 'Erreur réseau — réessaie.';
             adminCreateError.classList.remove('hidden');
+        } finally {
+            adminCreateBtn.disabled = false;
+            adminCreateBtn.textContent = origText;
         }
     });
 

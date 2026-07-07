@@ -1,32 +1,14 @@
 // Dépend de auth.js chargé avant dans index.html
-
-// ===== System Prompt (partagé par tous les providers) =====
-const SYSTEM_PROMPT = `Tu incarnes le rôle suivant : Expert métier, Coach pédagogique, Analyste critique, Assistant créatif.
-Contexte d'utilisation : Pour aider les mecaniciens qui ne sont pas trop habiles en code de vehicule a faire des reparations. Tu couvres les vehicules thermiques (essence, diesel), hybrides (PHEV, HEV) ET 100% électriques (BEV) comme Tesla, Nissan Leaf, Chevrolet Bolt, BMW i4, etc. Pour les VE, tu connais les systèmes spécifiques : batterie haute tension, BMS, onduleur, moteur électrique, chargeur OBC, convertisseur DC/DC, frein régénératif, pompe à chaleur.
-Objectif : Reperer le probleme, decrire l'anomalie porter une analyse du probleme et donne un resultat avec diagnostic pour reparer le vehicule.
-Présente ta réponse au format : Tableau, Paragraphes, Plan numéroté, Liste à puces.
-Contraintes impératives : Aller directement dans le problème, donne un diagnostic precis sans trop de gros mots technique. Soyez bref.
-Coûts des pièces : Toujours inclure une estimation du coût des pièces en dollars canadiens ($ CAD). Indique une fourchette réaliste (ex: 45–90 $ CAD) basée sur les prix du marché canadien (auto parts stores, dealership).
-Schéma de localisation : Fournis un schéma ASCII simple montrant où se trouve la pièce défectueuse sur le véhicule. Utilise un format comme celui-ci (adapte selon la pièce) :
-  ┌─────────────────────────────────┐
-  │  AVANT          ← CAPOT →       │
-  │  [Moteur]  [Filtre] [Batterie]  │
-  │  ← CÔTÉ GAUCHE  CÔTÉ DROIT →   │
-  │  [Boîte]   [★PIÈCE★]  [Réserv] │
-  │  ARRIÈRE                        │
-  └─────────────────────────────────┘
-  Marque la pièce défectueuse avec ★ et mets-la en évidence.
-Outils de démontage/remontage : Fournis deux listes séparées :
-  - DÉMONTAGE : liste les outils et clés avec tailles précises (ex: douille 10mm, clé plate 17mm, tournevis Torx T25)
-  - REMONTAGE : liste les couples de serrage si applicable (ex: 25 Nm), les précautions et l'ordre de remontage.
-Public visé : Au mecanicien reparateur de vehicule.
-Adopte un ton Technique, Détaillé, Concis, Pédagogique.`;
+// Le prompt système (SYSTEM_PROMPT) vit côté backend : backend/routes/diagnose.js.
+// Aucun prompt ni clé API dans le frontend.
 
 async function callDiagnose({ make, model, year, symptom, provider }) {
     const backendUrl = getBackendUrl();
 
-    // Sans backend → Pollinations direct (mode sans compte)
-    if (!backendUrl) {
+    // Sans backend OU sans compte (mode gratuit) → Pollinations direct.
+    // getBackendUrl() retourne toujours une URL par défaut : c'est l'absence
+    // de token qui identifie le mode « Continuer sans compte ».
+    if (!backendUrl || !isLoggedIn()) {
         return callPollinationsDirect({ make, model, year, symptom });
     }
 
@@ -53,24 +35,21 @@ async function callDiagnose({ make, model, year, symptom, provider }) {
     return data.result;
 }
 
-// Fallback Pollinations direct (pas de backend configuré)
+// Mode « sans compte » : Pollinations bloque désormais les appels directs
+// depuis le navigateur (Cloudflare Turnstile) — on passe par la route
+// publique du backend, qui appelle Pollinations côté serveur.
 async function callPollinationsDirect({ make, model, year, symptom }) {
-    const langInstruction = typeof t === 'function' ? t('ai.lang_instruction') : '';
-    const userPrompt = `Véhicule: ${make} ${model} (Année: ${year})\nSymptômes/Codes: ${symptom}\nVeuillez analyser et fournir un diagnostic selon vos instructions systémiques.${langInstruction ? '\n' + langInstruction : ''}`;
-    const resp = await fetch('https://text.pollinations.ai/openai', {
+    const backendUrl = getBackendUrl();
+    if (!backendUrl) throw new Error('URL backend non configurée dans ⚙️ Paramètres');
+    const resp = await fetch(`${backendUrl}/api/diagnose/free`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            messages: [
-                { role: 'system', content: SYSTEM_PROMPT },
-                { role: 'user', content: userPrompt }
-            ],
-            model: 'openai-large',
-            private: true,
-            seed: -1
-        })
+        body: JSON.stringify({ make, model, year, symptom, lang: typeof getLang === 'function' ? getLang() : 'fr' })
     });
-    if (!resp.ok) throw new Error(`[Pollinations] ${resp.statusText}`);
+    if (!resp.ok) {
+        const e = await resp.json().catch(() => ({}));
+        throw new Error(e.error || `[Pollinations] Erreur serveur (${resp.status})`);
+    }
     const data = await resp.json();
-    return data.choices?.[0]?.message?.content || '';
+    return data.result;
 }

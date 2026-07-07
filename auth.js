@@ -41,6 +41,8 @@ function saveAuth(token, email) {
 function logout() {
     localStorage.removeItem(AUTH_TOKEN_KEY);
     localStorage.removeItem(AUTH_USER_KEY);
+    localStorage.removeItem(LAST_ACTIVITY_KEY);
+    sessionStorage.removeItem('amboul_free_mode');
     showAuthOverlay();
 }
 

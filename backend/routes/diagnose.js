@@ -17,6 +17,80 @@ Adopte un ton Technique, Détaillé, Concis, Pédagogique.`;
 
 const VALID_PROVIDERS = ['pollinations', 'gemini', 'claude', 'deepseek', 'grok'];
 
+// Instruction explicite pour chaque langue — sans elle, Pollinations répond
+// parfois en anglais même pour une requête en français.
+const LANG_INSTRUCTIONS = {
+    fr: 'Réponds UNIQUEMENT en français.',
+    en: 'Respond ONLY in English.',
+    es: 'Responde ÚNICAMENTE en español.',
+    ht: 'Reponn SÈLMAN ann kreyòl ayisyen.'
+};
+
+function buildUserPrompt({ make, model, year, symptom, lang }) {
+    const langInstruction = LANG_INSTRUCTIONS[lang] || '';
+    return `Véhicule: ${make} ${model} (Année: ${year})\nSymptômes/Codes: ${symptom}\nVeuillez analyser et fournir un diagnostic selon vos instructions systémiques.${langInstruction ? '\n' + langInstruction : ''}`;
+}
+
+// Appel Pollinations côté serveur (les appels navigateur sont bloqués par Turnstile)
+async function callPollinations(userPrompt) {
+    let result = '';
+    // Endpoint GET simplifié (le plus fiable en 2026)
+    const combinedPrompt = `[SYSTÈME: ${SYSTEM_PROMPT.substring(0, 300)}]\n\n${userPrompt}`;
+    const getUrl = `https://text.pollinations.ai/${encodeURIComponent(combinedPrompt)}?model=openai&private=true`;
+    let polResp = await fetch(getUrl);
+
+    if (polResp.ok) {
+        result = await polResp.text();
+    }
+
+    // Fallback POST standard
+    if (!result) {
+        polResp = await fetch('https://text.pollinations.ai/', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                messages: [
+                    { role: 'user', content: `${SYSTEM_PROMPT}\n\n${userPrompt}` }
+                ],
+                model: 'openai',
+                private: true,
+                seed: 42
+            })
+        });
+        if (!polResp.ok) {
+            const errText = await polResp.text().catch(() => polResp.statusText);
+            throw new Error(`[Pollinations] ${polResp.status}: ${errText.substring(0, 100)}`);
+        }
+        result = await polResp.text();
+    }
+
+    if (!result) throw new Error('[Pollinations] Réponse vide — service peut-être indisponible');
+    return result;
+}
+
+// POST /api/diagnose/free — mode « sans compte » : Pollinations uniquement, sans auth.
+// Rate-limité strictement dans server.js. Aucune clé API exposée.
+router.post('/free',
+    body('make').trim().notEmpty().isLength({ max: 100 }).withMessage('Marque requise'),
+    body('model').trim().notEmpty().isLength({ max: 100 }).withMessage('Modèle requis'),
+    body('year').trim().matches(/^\d{4}$/).withMessage('Année invalide (format YYYY requis)'),
+    body('symptom').trim().notEmpty().isLength({ max: 2000 }).withMessage('Symptôme requis'),
+    async (req, res) => {
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({ error: errors.array()[0].msg });
+        }
+        try {
+            const result = await callPollinations(buildUserPrompt(req.body));
+            res.json({ result });
+        } catch (error) {
+            console.error('Diagnose free error:', error.message);
+            const isKnown = error.message.startsWith('[');
+            res.status(500).json({ error: isKnown ? error.message : 'Erreur serveur lors du diagnostic' });
+        }
+    }
+);
+
 router.post('/',
     requireAuth,
     body('make').trim().notEmpty().isLength({ max: 100 }).withMessage('Marque requise'),
@@ -31,50 +105,13 @@ router.post('/',
         }
 
         const { make, model, year, symptom, provider, lang = 'fr' } = req.body;
-        const langInstructions = {
-            fr: '',
-            en: 'Respond ONLY in English.',
-            es: 'Responde ÚNICAMENTE en español.',
-            ht: 'Reponn SÈLMAN ann kreyòl ayisyen.'
-        };
-        const langInstruction = langInstructions[lang] || '';
-        const userPrompt = `Véhicule: ${make} ${model} (Année: ${year})\nSymptômes/Codes: ${symptom}\nVeuillez analyser et fournir un diagnostic selon vos instructions systémiques.${langInstruction ? '\n' + langInstruction : ''}`;
+        const userPrompt = buildUserPrompt({ make, model, year, symptom, lang });
 
         try {
             let result = '';
 
             if (provider === 'pollinations') {
-                // Endpoint GET simplifié (le plus fiable en 2026)
-                const combinedPrompt = `[SYSTÈME: ${SYSTEM_PROMPT.substring(0, 300)}]\n\n${userPrompt}`;
-                const getUrl = `https://text.pollinations.ai/${encodeURIComponent(combinedPrompt)}?model=openai&private=true`;
-                let polResp = await fetch(getUrl);
-
-                if (polResp.ok) {
-                    result = await polResp.text();
-                }
-
-                // Fallback POST standard
-                if (!result) {
-                    polResp = await fetch('https://text.pollinations.ai/', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            messages: [
-                                { role: 'user', content: `${SYSTEM_PROMPT}\n\n${userPrompt}` }
-                            ],
-                            model: 'openai',
-                            private: true,
-                            seed: 42
-                        })
-                    });
-                    if (!polResp.ok) {
-                        const errText = await polResp.text().catch(() => polResp.statusText);
-                        throw new Error(`[Pollinations] ${polResp.status}: ${errText.substring(0, 100)}`);
-                    }
-                    result = await polResp.text();
-                }
-
-                if (!result) throw new Error('[Pollinations] Réponse vide — service peut-être indisponible');
+                result = await callPollinations(userPrompt);
 
             } else if (provider === 'gemini') {
                 const key = process.env.GEMINI_API_KEY;
@@ -85,7 +122,7 @@ router.post('/',
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
-                            system_instruction: { parts: { text: SYSTEM_PROMPT } },
+                            system_instruction: { parts: [{ text: SYSTEM_PROMPT }] },
                             contents: [{ parts: [{ text: userPrompt }] }]
                         })
                     }
@@ -125,7 +162,7 @@ router.post('/',
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` },
                     body: JSON.stringify({
-                        model: 'deepseek-v3',
+                        model: 'deepseek-chat',
                         messages: [
                             { role: 'system', content: SYSTEM_PROMPT },
                             { role: 'user', content: userPrompt }
