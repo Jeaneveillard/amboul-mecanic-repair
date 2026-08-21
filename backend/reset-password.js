@@ -7,7 +7,7 @@
 // PAS par la ligne de commande et ne reste PAS dans l'historique du terminal.
 // Il n'est jamais écrit en dur dans ce fichier.
 
-require('dotenv').config();
+require('dotenv').config({ quiet: true });
 const bcrypt = require('bcryptjs');
 const readline = require('readline');
 const { getDb } = require('./db');
