@@ -34,8 +34,8 @@ function buildUserPrompt({ make, model, year, symptom, lang }) {
 // Pollinations — API actuelle (gen.pollinations.ai, clé obligatoire).
 // L'ancien hôte text.pollinations.ai a supprimé son accès sans clé : il répond
 // 402 à tout le monde. Clé gratuite : https://enter.pollinations.ai/keys
-const POLLINATIONS_URL = 'https://gen.pollinations.ai/v1/chat/completions';
-const POLLINATIONS_MODEL = 'openai-fast';
+const MODE_GRATUIT_INDISPO = 'Le mode gratuit est momentanément indisponible (fournisseur non configuré). Connectez-vous avec un compte pour lancer un diagnostic.';
+const MODE_GRATUIT_ERREUR = 'Le service de diagnostic gratuit est momentanément indisponible. Réessayez dans quelques minutes ou connectez-vous avec un compte.';
 
 // Erreur porteuse d'un code HTTP : un souci de fournisseur ne doit pas donner un 500.
 function providerError(status, message) {
@@ -44,51 +44,136 @@ function providerError(status, message) {
     return err;
 }
 
-async function callPollinations(userPrompt) {
-    const key = process.env.POLLINATIONS_API_KEY;
-    if (!key) {
-        throw providerError(503, 'Le mode gratuit est momentanément indisponible (fournisseur non configuré). Connectez-vous avec un compte pour lancer un diagnostic.');
-    }
-
+// Appel HTTP d'un fournisseur : renvoie le JSON, transforme toute panne en erreur
+// typée 502. Le détail complet reste dans les logs serveur, jamais chez le client.
+async function providerFetch(label, url, options) {
     let resp;
     try {
-        resp = await fetch(POLLINATIONS_URL, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${key}`
-            },
-            body: JSON.stringify({
-                model: POLLINATIONS_MODEL,
-                messages: [
-                    { role: 'system', content: SYSTEM_PROMPT },
-                    { role: 'user', content: userPrompt }
-                ]
-            })
-        });
+        resp = await fetch(url, options);
     } catch (netErr) {
-        console.error('[Pollinations] réseau:', netErr.message);
-        throw providerError(502, 'Le service de diagnostic gratuit est injoignable. Réessayez dans quelques minutes.');
+        console.error(`[${label}] réseau:`, netErr.message);
+        throw providerError(502, `${label} est injoignable. Réessayez dans quelques minutes.`);
     }
-
     if (!resp.ok) {
-        // Détail complet dans les logs serveur, message neutre pour le client.
         const detail = await resp.text().catch(() => resp.statusText);
-        console.error(`[Pollinations] ${resp.status}: ${detail.substring(0, 300)}`);
-        throw providerError(502, 'Le service de diagnostic gratuit a refusé la requête. Réessayez plus tard ou connectez-vous avec un compte.');
+        console.error(`[${label}] ${resp.status}: ${detail.substring(0, 300)}`);
+        throw providerError(502, `${label} a refusé la requête (quota, crédits ou compte). Choisissez un autre fournisseur dans les paramètres IA.`);
     }
-
     const data = await resp.json().catch(() => null);
-    const result = data?.choices?.[0]?.message?.content;
-    if (!result) {
-        console.error('[Pollinations] réponse inattendue:', JSON.stringify(data).substring(0, 300));
-        throw providerError(502, 'Le service de diagnostic gratuit a renvoyé une réponse vide. Réessayez.');
+    if (!data) {
+        console.error(`[${label}] réponse illisible`);
+        throw providerError(502, `Réponse illisible de ${label}. Réessayez.`);
     }
-    return result;
+    return data;
 }
 
-// POST /api/diagnose/free — mode « sans compte » : Pollinations uniquement, sans auth.
-// Rate-limité strictement dans server.js. Aucune clé API exposée.
+function requireKey(label, envName) {
+    const key = process.env[envName];
+    if (!key) throw providerError(503, `${label} non configuré sur le serveur`);
+    return key;
+}
+
+function requireText(label, text) {
+    if (!text) {
+        console.error(`[${label}] réponse vide ou filtrée`);
+        throw providerError(502, `${label} a renvoyé une réponse vide ou bloquée. Reformulez le symptôme.`);
+    }
+    return text;
+}
+
+// --- Pollinations (gen.pollinations.ai) ---------------------------------
+// L'ancien hôte text.pollinations.ai a supprimé son accès sans clé : il répond
+// 402 à tout le monde. Clé gratuite : https://enter.pollinations.ai/keys
+async function callPollinations(userPrompt) {
+    const key = requireKey('Pollinations', 'POLLINATIONS_API_KEY');
+    const data = await providerFetch('Pollinations', 'https://gen.pollinations.ai/v1/chat/completions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` },
+        body: JSON.stringify({
+            model: 'openai-fast',
+            messages: [
+                { role: 'system', content: SYSTEM_PROMPT },
+                { role: 'user', content: userPrompt }
+            ]
+        })
+    });
+    return requireText('Pollinations', data?.choices?.[0]?.message?.content);
+}
+
+// --- Gemini --------------------------------------------------------------
+async function callGemini(userPrompt) {
+    const key = requireKey('Gemini', 'GEMINI_API_KEY');
+    const data = await providerFetch('Gemini',
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                system_instruction: { parts: [{ text: SYSTEM_PROMPT }] },
+                contents: [{ parts: [{ text: userPrompt }] }]
+            })
+        });
+    return requireText('Gemini', data?.candidates?.[0]?.content?.parts?.[0]?.text);
+}
+
+// --- Claude --------------------------------------------------------------
+async function callClaude(userPrompt) {
+    const key = requireKey('Claude', 'CLAUDE_API_KEY');
+    const data = await providerFetch('Claude', 'https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'x-api-key': key,
+            'anthropic-version': '2023-06-01'
+        },
+        body: JSON.stringify({
+            model: 'claude-haiku-4-5-20251001',
+            max_tokens: 2048,
+            system: SYSTEM_PROMPT,
+            messages: [{ role: 'user', content: userPrompt }]
+        })
+    });
+    return requireText('Claude', data?.content?.[0]?.text);
+}
+
+// --- Fournisseurs au format OpenAI (DeepSeek, Grok) ----------------------
+const OPENAI_COMPAT = {
+    deepseek: { label: 'DeepSeek', url: 'https://api.deepseek.com/chat/completions', model: 'deepseek-chat', env: 'DEEPSEEK_API_KEY' },
+    grok:     { label: 'Grok',     url: 'https://api.x.ai/v1/chat/completions',      model: 'grok-3-mini',   env: 'GROK_API_KEY' }
+};
+
+async function callOpenAICompatible(id, userPrompt) {
+    const { label, url, model, env } = OPENAI_COMPAT[id];
+    const key = requireKey(label, env);
+    const data = await providerFetch(label, url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` },
+        body: JSON.stringify({
+            model,
+            messages: [
+                { role: 'system', content: SYSTEM_PROMPT },
+                { role: 'user', content: userPrompt }
+            ]
+        })
+    });
+    return requireText(label, data?.choices?.[0]?.message?.content);
+}
+
+// Un seul point d'entrée par fournisseur, partagé par les deux routes.
+const PROVIDER_CALLERS = {
+    pollinations: callPollinations,
+    gemini: callGemini,
+    claude: callClaude,
+    deepseek: (p) => callOpenAICompatible('deepseek', p),
+    grok: (p) => callOpenAICompatible('grok', p)
+};
+
+// Fournisseur alimentant le mode « sans compte » (route publique /api/diagnose/free).
+// Bascule par FREE_PROVIDER : « pollinations » (défaut) ou n'importe quelle clé ci-dessus.
+const FREE_PROVIDER = (process.env.FREE_PROVIDER || 'pollinations').trim().toLowerCase();
+
+// POST /api/diagnose/free — mode « sans compte », sans auth.
+// Le fournisseur est choisi par FREE_PROVIDER. Rate-limité strictement dans
+// server.js (5 req/min par IP). Aucune clé API exposée au client.
 router.post('/free',
     body('make').trim().notEmpty().isLength({ max: 100 }).withMessage('Marque requise'),
     body('model').trim().notEmpty().isLength({ max: 100 }).withMessage('Modèle requis'),
@@ -99,15 +184,21 @@ router.post('/free',
         if (!errors.isEmpty()) {
             return res.status(400).json({ error: errors.array()[0].msg });
         }
+        const call = PROVIDER_CALLERS[FREE_PROVIDER];
+        if (!call) {
+            console.error(`FREE_PROVIDER inconnu : ${FREE_PROVIDER} (attendu : ${Object.keys(PROVIDER_CALLERS).join(' | ')})`);
+            return res.status(503).json({ error: MODE_GRATUIT_INDISPO });
+        }
         try {
-            const result = await callPollinations(buildUserPrompt(req.body));
+            const result = await call(buildUserPrompt(req.body));
             res.json({ result });
         } catch (error) {
-            console.error('Diagnose free error:', error.message);
-            // error.status : souci de fournisseur déjà formulé pour le mécanicien (503/502).
-            res.status(error.status || 500).json({
-                error: error.status ? error.message : 'Erreur serveur lors du diagnostic'
-            });
+            console.error(`Diagnose free error (${FREE_PROVIDER}) :`, error.message);
+            // Messages unifiés : l'utilisateur du mode gratuit n'a pas à savoir
+            // quel fournisseur tourne derrière, ni à lire son jargon.
+            if (error.status === 503) return res.status(503).json({ error: MODE_GRATUIT_INDISPO });
+            if (error.status === 502) return res.status(502).json({ error: MODE_GRATUIT_ERREUR });
+            res.status(500).json({ error: 'Erreur serveur lors du diagnostic' });
         }
     }
 );
@@ -129,90 +220,7 @@ router.post('/',
         const userPrompt = buildUserPrompt({ make, model, year, symptom, lang });
 
         try {
-            let result = '';
-
-            if (provider === 'pollinations') {
-                result = await callPollinations(userPrompt);
-
-            } else if (provider === 'gemini') {
-                const key = process.env.GEMINI_API_KEY;
-                if (!key) return res.status(503).json({ error: 'Gemini non configuré sur le serveur' });
-                const resp = await fetch(
-                    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`,
-                    {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            system_instruction: { parts: [{ text: SYSTEM_PROMPT }] },
-                            contents: [{ parts: [{ text: userPrompt }] }]
-                        })
-                    }
-                );
-                if (!resp.ok) { const e = await resp.json(); throw new Error(e.error?.message || resp.statusText); }
-                const data = await resp.json();
-                if (!data.candidates?.[0]?.content?.parts?.[0]?.text) {
-                    throw new Error('Réponse Gemini vide ou bloquée par le filtre de sécurité');
-                }
-                result = data.candidates[0].content.parts[0].text;
-
-            } else if (provider === 'claude') {
-                const key = process.env.CLAUDE_API_KEY;
-                if (!key) return res.status(503).json({ error: 'Claude non configuré sur le serveur' });
-                const resp = await fetch('https://api.anthropic.com/v1/messages', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'x-api-key': key,
-                        'anthropic-version': '2023-06-01'
-                    },
-                    body: JSON.stringify({
-                        model: 'claude-haiku-4-5-20251001',
-                        max_tokens: 2048,
-                        system: SYSTEM_PROMPT,
-                        messages: [{ role: 'user', content: userPrompt }]
-                    })
-                });
-                if (!resp.ok) { const e = await resp.json(); throw new Error(e.error?.message || resp.statusText); }
-                const data = await resp.json();
-                result = data.content[0].text;
-
-            } else if (provider === 'deepseek') {
-                const key = process.env.DEEPSEEK_API_KEY;
-                if (!key) return res.status(503).json({ error: 'DeepSeek non configuré sur le serveur' });
-                const resp = await fetch('https://api.deepseek.com/chat/completions', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` },
-                    body: JSON.stringify({
-                        model: 'deepseek-chat',
-                        messages: [
-                            { role: 'system', content: SYSTEM_PROMPT },
-                            { role: 'user', content: userPrompt }
-                        ]
-                    })
-                });
-                if (!resp.ok) { const e = await resp.json(); throw new Error(e.error?.message || resp.statusText); }
-                const data = await resp.json();
-                result = data.choices[0].message.content;
-
-            } else if (provider === 'grok') {
-                const key = process.env.GROK_API_KEY;
-                if (!key) return res.status(503).json({ error: 'Grok non configuré sur le serveur' });
-                const resp = await fetch('https://api.x.ai/v1/chat/completions', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` },
-                    body: JSON.stringify({
-                        model: 'grok-3-mini',
-                        messages: [
-                            { role: 'system', content: SYSTEM_PROMPT },
-                            { role: 'user', content: userPrompt }
-                        ]
-                    })
-                });
-                if (!resp.ok) { const e = await resp.json(); throw new Error(e.error?.message || resp.statusText); }
-                const data = await resp.json();
-                result = data.choices[0].message.content;
-            }
-
+            const result = await PROVIDER_CALLERS[provider](userPrompt);
             res.json({ result });
         } catch (error) {
             console.error('Diagnose error:', error.message);

@@ -28,6 +28,8 @@ App de diagnostic automobile IA pour mécaniciens (utilisée sur téléphone/tab
 
 Les clés API ne sont JAMAIS dans le frontend — uniquement dans `backend/.env`.
 
+Le fournisseur du mode « sans compte » est choisi par `FREE_PROVIDER` (`pollinations` par défaut, ou `gemini`). La route `/api/diagnose/free` étant publique, le quota du fournisseur retenu est exposé au trafic anonyme — plafonné à 5 req/min par IP.
+
 ## Clés localStorage (frontend)
 - `amboul_jwt`, `amboul_user`, `amboul_backend_url`, `amboul_last_activity`
 - `amboul_history` (max 10 entrées, JSON array), `amboul_col_widths`
