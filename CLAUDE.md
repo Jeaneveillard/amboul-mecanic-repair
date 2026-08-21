@@ -20,7 +20,7 @@ App de diagnostic automobile IA pour mécaniciens (utilisée sur téléphone/tab
 - Reset mot de passe admin : `backend/reset-password.js` (la route `/api/auth/setup` refuse si l'admin existe déjà)
 
 ## Providers IA (appelés par le backend, clés dans `backend/.env`)
-- **Pollinations** (gratuit, défaut) : le mode « sans compte » passe par la route publique `/api/diagnose/free` (Pollinations bloque les appels directs navigateur via Turnstile)
+- **Pollinations** (défaut) : `openai-fast` via `https://gen.pollinations.ai/v1/chat/completions`, en-tête `Authorization: Bearer POLLINATIONS_API_KEY`. Le mode « sans compte » passe par la route publique `/api/diagnose/free` (appels navigateur directs bloqués par Turnstile). L’accès anonyme de l’ancien hôte `text.pollinations.ai` a été supprimé (402) : la clé est obligatoire, mais gratuite via https://enter.pollinations.ai/keys
 - **Gemini** : `gemini-2.5-flash`
 - **Claude** : `claude-haiku-4-5-20251001`
 - **DeepSeek** : `deepseek-chat`

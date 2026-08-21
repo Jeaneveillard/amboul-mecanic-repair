@@ -31,40 +31,59 @@ function buildUserPrompt({ make, model, year, symptom, lang }) {
     return `Véhicule: ${make} ${model} (Année: ${year})\nSymptômes/Codes: ${symptom}\nVeuillez analyser et fournir un diagnostic selon vos instructions systémiques.${langInstruction ? '\n' + langInstruction : ''}`;
 }
 
-// Appel Pollinations côté serveur (les appels navigateur sont bloqués par Turnstile)
-async function callPollinations(userPrompt) {
-    let result = '';
-    // Endpoint GET simplifié (le plus fiable en 2026)
-    const combinedPrompt = `[SYSTÈME: ${SYSTEM_PROMPT.substring(0, 300)}]\n\n${userPrompt}`;
-    const getUrl = `https://text.pollinations.ai/${encodeURIComponent(combinedPrompt)}?model=openai&private=true`;
-    let polResp = await fetch(getUrl);
+// Pollinations — API actuelle (gen.pollinations.ai, clé obligatoire).
+// L'ancien hôte text.pollinations.ai a supprimé son accès sans clé : il répond
+// 402 à tout le monde. Clé gratuite : https://enter.pollinations.ai/keys
+const POLLINATIONS_URL = 'https://gen.pollinations.ai/v1/chat/completions';
+const POLLINATIONS_MODEL = 'openai-fast';
 
-    if (polResp.ok) {
-        result = await polResp.text();
+// Erreur porteuse d'un code HTTP : un souci de fournisseur ne doit pas donner un 500.
+function providerError(status, message) {
+    const err = new Error(message);
+    err.status = status;
+    return err;
+}
+
+async function callPollinations(userPrompt) {
+    const key = process.env.POLLINATIONS_API_KEY;
+    if (!key) {
+        throw providerError(503, 'Le mode gratuit est momentanément indisponible (fournisseur non configuré). Connectez-vous avec un compte pour lancer un diagnostic.');
     }
 
-    // Fallback POST standard
-    if (!result) {
-        polResp = await fetch('https://text.pollinations.ai/', {
+    let resp;
+    try {
+        resp = await fetch(POLLINATIONS_URL, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${key}`
+            },
             body: JSON.stringify({
+                model: POLLINATIONS_MODEL,
                 messages: [
-                    { role: 'user', content: `${SYSTEM_PROMPT}\n\n${userPrompt}` }
-                ],
-                model: 'openai',
-                private: true,
-                seed: 42
+                    { role: 'system', content: SYSTEM_PROMPT },
+                    { role: 'user', content: userPrompt }
+                ]
             })
         });
-        if (!polResp.ok) {
-            const errText = await polResp.text().catch(() => polResp.statusText);
-            throw new Error(`[Pollinations] ${polResp.status}: ${errText.substring(0, 100)}`);
-        }
-        result = await polResp.text();
+    } catch (netErr) {
+        console.error('[Pollinations] réseau:', netErr.message);
+        throw providerError(502, 'Le service de diagnostic gratuit est injoignable. Réessayez dans quelques minutes.');
     }
 
-    if (!result) throw new Error('[Pollinations] Réponse vide — service peut-être indisponible');
+    if (!resp.ok) {
+        // Détail complet dans les logs serveur, message neutre pour le client.
+        const detail = await resp.text().catch(() => resp.statusText);
+        console.error(`[Pollinations] ${resp.status}: ${detail.substring(0, 300)}`);
+        throw providerError(502, 'Le service de diagnostic gratuit a refusé la requête. Réessayez plus tard ou connectez-vous avec un compte.');
+    }
+
+    const data = await resp.json().catch(() => null);
+    const result = data?.choices?.[0]?.message?.content;
+    if (!result) {
+        console.error('[Pollinations] réponse inattendue:', JSON.stringify(data).substring(0, 300));
+        throw providerError(502, 'Le service de diagnostic gratuit a renvoyé une réponse vide. Réessayez.');
+    }
     return result;
 }
 
@@ -85,8 +104,10 @@ router.post('/free',
             res.json({ result });
         } catch (error) {
             console.error('Diagnose free error:', error.message);
-            const isKnown = error.message.startsWith('[');
-            res.status(500).json({ error: isKnown ? error.message : 'Erreur serveur lors du diagnostic' });
+            // error.status : souci de fournisseur déjà formulé pour le mécanicien (503/502).
+            res.status(error.status || 500).json({
+                error: error.status ? error.message : 'Erreur serveur lors du diagnostic'
+            });
         }
     }
 );
@@ -197,7 +218,9 @@ router.post('/',
             console.error('Diagnose error:', error.message);
             // Ne pas exposer les détails internes (clés API partielles, URLs, etc.)
             const isKnown = error.message.startsWith('[') || error.message.includes('configuré');
-            res.status(500).json({ error: isKnown ? error.message : 'Erreur serveur lors du diagnostic' });
+            res.status(error.status || 500).json({
+                error: (error.status || isKnown) ? error.message : 'Erreur serveur lors du diagnostic'
+            });
         }
     }
 );

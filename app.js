@@ -1041,7 +1041,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div class="empty-state">
                     <span class="empty-icon" style="color: var(--error-color)">⚠️</span>
                     <p style="color: var(--error-color); font-weight: 600;">${escHtml(userMessage)}</p>
-                    <p style="font-size: 0.8rem; margin-top: 0.5rem; color: var(--text-muted);">Détail : ${escHtml(error.message)}</p>
+                    ${userMessage === error.message ? '' : `<p style="font-size: 0.8rem; margin-top: 0.5rem; color: var(--text-muted);">Détail : ${escHtml(error.message)}</p>`}
                 </div>
             `;
             printBtn.classList.add('hidden');
